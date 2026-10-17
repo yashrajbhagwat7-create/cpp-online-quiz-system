@@ -1,0 +1,16 @@
+# C++ OOP Online Examination System - Question Repository
+# Format:
+#   MCQ: MCQ | Question | Option A | Option B | Option C | Option D | CorrectOption | Points
+#   TF:  TF  | Question | CorrectAnswer (True/False) | Points
+#   FIB: FIB | Question | ExpectedAnswer | Points
+
+MCQ|What is the typical size of an empty class object in C++?|1 byte|0 bytes|4 bytes|Undefined|A|2
+TF|A constructor in C++ can be declared as virtual.|False|1
+MCQ|Which OOP feature is resolved at runtime using a Virtual Method Table (vtable)?|Polymorphism|Encapsulation|Abstraction|Data Hiding|A|2
+FIB|The concept of binding data and functions into a single unit is called _____|encapsulation|2
+TF|Friend functions have access to private members of a class.|True|1
+MCQ|Which operator CANNOT be overloaded in C++?|:: (Scope Resolution)|+ (Addition)|[] (Subscript)|= (Assignment)|A|2
+FIB|A class containing at least one pure virtual function is called an _____ class|abstract|2
+TF|An abstract class can be directly instantiated.|False|1
+MCQ|What form of inheritance does C++ support that Java does NOT support natively?|Multiple Inheritance|Single Inheritance|Multilevel Inheritance|Hierarchical Inheritance|A|2
+FIB|The mechanism of deriving a class from an existing class is called _____|inheritance|2

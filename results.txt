@@ -1,0 +1,4 @@
+CS202601|Alice Smith|15/17|88.2%|A  (Excellent)|2026-10-15 10:30:00
+CS202602|Bob Johnson|14/17|82.4%|A  (Excellent)|2026-10-15 11:15:22
+CS202603|Charlie Brown|10/17|58.8%|D  (Pass)|2026-10-16 14:05:10
+C02009|yashraj kailas bhagwat|13/17|76.5%|B  (Good)|2026-10-17 21:00:43

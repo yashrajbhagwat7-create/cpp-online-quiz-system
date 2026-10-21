@@ -14,3 +14,6 @@ FIB|A class containing at least one pure virtual function is called an _____ cla
 TF|An abstract class can be directly instantiated.|False|1
 MCQ|What form of inheritance does C++ support that Java does NOT support natively?|Multiple Inheritance|Single Inheritance|Multilevel Inheritance|Hierarchical Inheritance|A|2
 FIB|The mechanism of deriving a class from an existing class is called _____|inheritance|2
+MCQ|what do you call an function who is not memeber of class but can access the data of hat class?|freind function|virtual function|pure virtual function|do nothing function|A|2
+
+MCQ|Which C++ keyword is used to prevent a virtual function from being overridden?|override|final|sealed|const|B|2

@@ -3,27 +3,9 @@
  *           OBJECT-ORIENTED PROGRAMMING (C++) LAB MINI PROJECT
  *                  ONLINE EXAMINATION & QUIZ SYSTEM
  * ============================================================================
- *
- * Title       : File-Driven Online Examination System
- * Language    : C++ (Standard C++17)
- * Architecture: Single-File Modular OOP Design (Ideal for Lab Hardcopy Submission)
- *
- * ----------------------------------------------------------------------------
- *                     OOP CONCEPTS DEMONSTRATED IN THIS CODE
- * ----------------------------------------------------------------------------
- * 1. DATA ENCAPSULATION   : Data members kept private/protected; accessed only
- *                           through public methods and validated getters/setters.
- * 2. DATA ABSTRACTION     : Abstract Base Class 'Question' with pure virtual functions
- *                           enforcing standardized interfaces across question types.
- * 3. INHERITANCE          : Hierarchical inheritance (MCQQuestion, TrueFalseQuestion,
- *                           and FillInBlankQuestion derive from Question).
- * 4. DYNAMIC POLYMORPHISM : Generic processing via std::vector<Question*> using
- *                           runtime dynamic method dispatch through the vtable.
- * 5. VIRTUAL DESTRUCTORS  : Prevents memory leaks during polymorphic deletion.
- * 6. OPERATOR OVERLOADING : Overloaded operator<< for Question and User scorecards.
- * 7. EXCEPTION HANDLING   : Custom exception classes (QuizException, FileNotFoundException,
- *                           InvalidFormatException) wrapped in robust try-catch blocks.
- * 8. FILE STREAMS (I/O)   : File persistence using std::ifstream and std::ofstream.
+ * Title    : File-Driven Online Examination System (C++17)
+ * Concepts : Abstraction, Encapsulation, Inheritance, Dynamic Polymorphism,
+ *            Virtual Destructors, Operator Overloading, Exceptions, File Streams.
  * ============================================================================
  */
 
@@ -33,790 +15,617 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <algorithm>
 #include <cctype>
-#include <exception>
 #include <ctime>
+#include <exception>
+
+using namespace std;
 
 // ============================================================================
-// SECTION 1: CUSTOM EXCEPTION HIERARCHY
-// Demonstrates: Exception Handling, Inheritance from std::exception
+// 1. HELPER STRING & TIME FUNCTIONS
 // ============================================================================
 
-class QuizException : public std::exception {
-protected:
-    std::string message;
-public:
-    explicit QuizException(const std::string& msg) : message(msg) {}
-    virtual const char* what() const noexcept override {
-        return message.c_str();
-    }
-};
+string trim(const string& s) {
+    int start = 0, end = (int)s.length() - 1;
+    while (start <= end && isspace((unsigned char)s[start])) start++;
+    while (end >= start && isspace((unsigned char)s[end])) end--;
+    return (start <= end) ? s.substr(start, end - start + 1) : "";
+}
 
-class FileNotFoundException : public QuizException {
-public:
-    explicit FileNotFoundException(const std::string& filename)
-        : QuizException("Error: File could not be opened or found: " + filename) {}
-};
+string toUpper(string s) {
+    for (char &c : s) c = toupper((unsigned char)c);
+    return s;
+}
 
-class InvalidFormatException : public QuizException {
+string toLower(string s) {
+    for (char &c : s) c = tolower((unsigned char)c);
+    return s;
+}
+
+string getCurrentTime() {
+    time_t now = time(nullptr);
+    char buf[30];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    return string(buf);
+}
+
+// ============================================================================
+// 2. EXCEPTION HANDLING HIERARCHY
+// ============================================================================
+
+class QuizException : public exception {
+    string msg;
 public:
-    explicit InvalidFormatException(const std::string& line, int lineNum)
-        : QuizException("Error: Corrupted/Malformed record at line " + 
-                        std::to_string(lineNum) + ": '" + line + "'") {}
+    QuizException(string m) : msg(m) {}
+    const char* what() const noexcept override { return msg.c_str(); }
 };
 
 // ============================================================================
-// SECTION 2: ABSTRACT BASE CLASS (Question)
+// 3. ABSTRACT BASE CLASS (Question)
 // Demonstrates: Data Abstraction, Pure Virtual Functions, Virtual Destructor
 // ============================================================================
 
 class Question {
 protected:
     int id;
-    std::string questionText;
+    string questionText;
     int points;
 
 public:
-    Question() : id(0), questionText(""), points(1) {}
-    Question(int id, const std::string& text, int points)
+    Question(int id, string text, int points)
         : id(id), questionText(text), points(points) {}
+    virtual ~Question() {} // Virtual destructor for memory safety
 
-    // Virtual Destructor is mandatory for safe polymorphic deletion
-    virtual ~Question() {}
-
-    // Getters
     int getId() const { return id; }
-    std::string getQuestionText() const { return questionText; }
+    string getText() const { return questionText; }
     int getPoints() const { return points; }
 
-    // Pure Virtual Functions (Interface Definition)
+    // Pure Virtual Functions (Dynamic Polymorphism Interface)
     virtual void display() const = 0;
-    virtual bool checkAnswer(const std::string& userAnswer) const = 0;
-    virtual std::string getType() const = 0;
-    virtual std::string getCorrectAnswer() const = 0;
-    virtual std::string serialize() const = 0;
+    virtual bool checkAnswer(string userAns) const = 0;
+    virtual string getType() const = 0;
+    virtual string getCorrectAnswer() const = 0;
+    virtual string serialize() const = 0;
 
-    // Operator Overloading: Output stream formatting
-    friend std::ostream& operator<<(std::ostream& os, const Question& q) {
-        os << "[Q" << q.id << "] (" << q.points << " pt) " << q.questionText;
+    // Operator Overloading for stream output
+    friend ostream& operator<<(ostream& os, const Question& q) {
+        os << "[Q" << q.id << "] (" << q.points << " pts) " << q.questionText;
         return os;
-    }
-
-    // Static Utility Methods
-    static std::string trim(const std::string& str) {
-        const std::string ws = " \t\r\n";
-        size_t start = str.find_first_not_of(ws);
-        if (start == std::string::npos) return "";
-        size_t end = str.find_last_not_of(ws);
-        return str.substr(start, end - start + 1);
-    }
-
-    static std::string toUpper(const std::string& str) {
-        std::string res = str;
-        std::transform(res.begin(), res.end(), res.begin(),
-                       [](unsigned char c) { return std::toupper(c); });
-        return res;
-    }
-
-    static std::string toLower(const std::string& str) {
-        std::string res = str;
-        std::transform(res.begin(), res.end(), res.begin(),
-                       [](unsigned char c) { return std::tolower(c); });
-        return res;
     }
 };
 
 // ============================================================================
-// SECTION 3: DERIVED QUESTION CLASSES
-// Demonstrates: Hierarchical Inheritance, Function Overriding, Polymorphism
+// 4. DERIVED QUESTION CLASSES (Inheritance & Polymorphism)
 // ============================================================================
 
-/**
- * Derived Class 1: Multiple Choice Question (MCQ)
- */
+// Derived Class 1: Multiple Choice Question (MCQ)
 class MCQQuestion : public Question {
-private:
-    std::vector<std::string> options;
-    char correctOption; // Stored as uppercase 'A', 'B', 'C', or 'D'
+    vector<string> options;
+    char correctOption; // 'A', 'B', 'C', or 'D'
 
 public:
-    MCQQuestion() : Question(), correctOption('A') {}
-    MCQQuestion(int id, const std::string& text, const std::vector<std::string>& opts,
-                char correctOpt, int points)
-        : Question(id, text, points), options(opts), 
-          correctOption(static_cast<char>(std::toupper(correctOpt))) {}
+    MCQQuestion(int id, string text, vector<string> opts, char correctOpt, int pts)
+        : Question(id, text, pts), options(opts), correctOption(toupper(correctOpt)) {}
 
-    virtual ~MCQQuestion() override {}
-
-    virtual void display() const override {
-        std::cout << "\n============================================================\n";
-        std::cout << " [Question " << id << "] (Multiple Choice | " << points 
-                  << " Point" << (points > 1 ? "s" : "") << ")\n";
-        std::cout << "------------------------------------------------------------\n";
-        std::cout << " " << questionText << "\n\n";
-
+    void display() const override {
+        cout << "\n============================================================\n"
+             << " [Question " << id << "] (Multiple Choice | " << points << " Points)\n"
+             << "------------------------------------------------------------\n"
+             << " " << questionText << "\n\n";
         char optLabel = 'A';
-        for (const auto& opt : options) {
-            std::cout << "   [" << optLabel << "] " << opt << "\n";
-            optLabel++;
+        for (const string& opt : options) {
+            cout << "   [" << optLabel++ << "] " << opt << "\n";
         }
-        std::cout << "============================================================\n";
+        cout << "============================================================\n";
     }
 
-    virtual bool checkAnswer(const std::string& userAnswer) const override {
-        std::string clean = toUpper(trim(userAnswer));
-        if (clean.empty()) return false;
-        return clean[0] == correctOption;
+    bool checkAnswer(string userAns) const override {
+        string clean = toUpper(trim(userAns));
+        return !clean.empty() && clean[0] == correctOption;
     }
 
-    virtual std::string getType() const override {
-        return "Multiple Choice (MCQ)";
-    }
+    string getType() const override { return "Multiple Choice (MCQ)"; }
 
-    virtual std::string getCorrectAnswer() const override {
-        std::string ans;
+    string getCorrectAnswer() const override {
+        string ans = "";
         ans += correctOption;
         int idx = correctOption - 'A';
-        if (idx >= 0 && idx < static_cast<int>(options.size())) {
-            ans += " (" + options[idx] + ")";
-        }
+        if (idx >= 0 && idx < (int)options.size()) ans += " (" + options[idx] + ")";
         return ans;
     }
 
-    virtual std::string serialize() const override {
-        std::string line = "MCQ|" + questionText;
-        for (const auto& opt : options) {
-            line += "|" + opt;
-        }
-        line += "|" + std::string(1, correctOption) + "|" + std::to_string(points);
+    string serialize() const override {
+        string line = "MCQ|" + questionText;
+        for (const string& o : options) line += "|" + o;
+        line += "|" + string(1, correctOption) + "|" + to_string(points);
         return line;
     }
 };
 
-/**
- * Derived Class 2: True / False Question
- */
+// Derived Class 2: True / False Question
 class TrueFalseQuestion : public Question {
-private:
     bool correctAnswer;
 
 public:
-    TrueFalseQuestion() : Question(), correctAnswer(false) {}
-    TrueFalseQuestion(int id, const std::string& text, bool correctAns, int points)
-        : Question(id, text, points), correctAnswer(correctAns) {}
+    TrueFalseQuestion(int id, string text, bool correctAns, int pts)
+        : Question(id, text, pts), correctAnswer(correctAns) {}
 
-    virtual ~TrueFalseQuestion() override {}
-
-    virtual void display() const override {
-        std::cout << "\n============================================================\n";
-        std::cout << " [Question " << id << "] (True / False | " << points 
-                  << " Point" << (points > 1 ? "s" : "") << ")\n";
-        std::cout << "------------------------------------------------------------\n";
-        std::cout << " " << questionText << "\n\n";
-        std::cout << "   Options: Enter [T] for True or [F] for False\n";
-        std::cout << "============================================================\n";
+    void display() const override {
+        cout << "\n============================================================\n"
+             << " [Question " << id << "] (True / False | " << points << " Points)\n"
+             << "------------------------------------------------------------\n"
+             << " " << questionText << "\n\n"
+             << "   Options: Enter [T] for True or [F] for False\n"
+             << "============================================================\n";
     }
 
-    virtual bool checkAnswer(const std::string& userAnswer) const override {
-        std::string clean = toUpper(trim(userAnswer));
-        if (clean.empty()) return false;
-
-        bool userChoice = false;
-        if (clean == "T" || clean == "TRUE" || clean == "1") {
-            userChoice = true;
-        } else if (clean == "F" || clean == "FALSE" || clean == "0") {
-            userChoice = false;
-        } else {
-            return false;
-        }
-        return userChoice == correctAnswer;
+    bool checkAnswer(string userAns) const override {
+        string clean = toUpper(trim(userAns));
+        if (clean == "T" || clean == "TRUE" || clean == "1") return correctAnswer == true;
+        if (clean == "F" || clean == "FALSE" || clean == "0") return correctAnswer == false;
+        return false;
     }
 
-    virtual std::string getType() const override {
-        return "True / False";
-    }
+    string getType() const override { return "True / False"; }
+    string getCorrectAnswer() const override { return correctAnswer ? "True" : "False"; }
 
-    virtual std::string getCorrectAnswer() const override {
-        return correctAnswer ? "True" : "False";
-    }
-
-    virtual std::string serialize() const override {
-        return "TF|" + questionText + "|" + (correctAnswer ? "True" : "False") + 
-               "|" + std::to_string(points);
+    string serialize() const override {
+        return "TF|" + questionText + "|" + (correctAnswer ? "True" : "False") + "|" + to_string(points);
     }
 };
 
-/**
- * Derived Class 3: Fill in the Blanks Question
- */
+// Derived Class 3: Fill in the Blanks Question
 class FillInBlankQuestion : public Question {
-private:
-    std::string expectedAnswer;
+    string expectedAnswer;
 
 public:
-    FillInBlankQuestion() : Question(), expectedAnswer("") {}
-    FillInBlankQuestion(int id, const std::string& text, const std::string& answer, int points)
-        : Question(id, text, points), expectedAnswer(answer) {}
+    FillInBlankQuestion(int id, string text, string answer, int pts)
+        : Question(id, text, pts), expectedAnswer(answer) {}
 
-    virtual ~FillInBlankQuestion() override {}
-
-    virtual void display() const override {
-        std::cout << "\n============================================================\n";
-        std::cout << " [Question " << id << "] (Fill in the Blanks | " << points 
-                  << " Point" << (points > 1 ? "s" : "") << ")\n";
-        std::cout << "------------------------------------------------------------\n";
-        std::cout << " " << questionText << "\n\n";
-        std::cout << "   Instruction: Type the missing word or phrase.\n";
-        std::cout << "============================================================\n";
+    void display() const override {
+        cout << "\n============================================================\n"
+             << " [Question " << id << "] (Fill in the Blanks | " << points << " Points)\n"
+             << "------------------------------------------------------------\n"
+             << " " << questionText << "\n\n"
+             << "   Instruction: Type the missing word or phrase.\n"
+             << "============================================================\n";
     }
 
-    virtual bool checkAnswer(const std::string& userAnswer) const override {
-        std::string cleanUser = toLower(trim(userAnswer));
-        std::string cleanExpected = toLower(trim(expectedAnswer));
-        return cleanUser == cleanExpected;
+    bool checkAnswer(string userAns) const override {
+        return toLower(trim(userAns)) == toLower(trim(expectedAnswer));
     }
 
-    virtual std::string getType() const override {
-        return "Fill in the Blanks";
-    }
+    string getType() const override { return "Fill in the Blanks"; }
+    string getCorrectAnswer() const override { return expectedAnswer; }
 
-    virtual std::string getCorrectAnswer() const override {
-        return expectedAnswer;
-    }
-
-    virtual std::string serialize() const override {
-        return "FIB|" + questionText + "|" + expectedAnswer + "|" + std::to_string(points);
+    string serialize() const override {
+        return "FIB|" + questionText + "|" + expectedAnswer + "|" + to_string(points);
     }
 };
 
 // ============================================================================
-// SECTION 4: USER & SCORECARD CLASS
+// 5. USER / CANDIDATE ENTITY & SCORECARD
 // Demonstrates: Encapsulation, Operator Overloading (operator<<)
 // ============================================================================
 
 class User {
 private:
-    std::string name;
-    std::string rollNo;
-    int score;
-    int maxScore;
-    int correctCount;
-    int totalQuestions;
+    string name, rollNo;
+    int score, maxScore, correctCount, totalQuestions;
 
 public:
-    User() : name("Candidate"), rollNo("0000"), score(0), maxScore(0),
-             correctCount(0), totalQuestions(0) {}
+    User(string name = "Student", string roll = "N/A")
+        : name(name), rollNo(roll), score(0), maxScore(0), correctCount(0), totalQuestions(0) {}
 
-    User(const std::string& name, const std::string& rollNo)
-        : name(name), rollNo(rollNo), score(0), maxScore(0),
-          correctCount(0), totalQuestions(0) {}
-
-    std::string getName() const { return name; }
-    std::string getRollNo() const { return rollNo; }
+    string getName() const { return name; }
+    string getRollNo() const { return rollNo; }
     int getScore() const { return score; }
     int getMaxScore() const { return maxScore; }
-    int getCorrectCount() const { return correctCount; }
-    int getTotalQuestions() const { return totalQuestions; }
 
-    void addScore(int points) { score += points; }
-
-    void setQuizStats(int correct, int total, int totalMaxScore) {
+    void addScore(int pts) { score += pts; }
+    void setStats(int correct, int total, int totalMax) {
         correctCount = correct;
         totalQuestions = total;
-        maxScore = totalMaxScore;
+        maxScore = totalMax;
     }
 
     double getPercentage() const {
-        if (maxScore <= 0) return 0.0;
-        return (static_cast<double>(score) / maxScore) * 100.0;
+        return (maxScore > 0) ? (score * 100.0 / maxScore) : 0.0;
     }
 
-    std::string getGrade() const {
-        double pct = getPercentage();
-        if (pct >= 90.0) return "A+ (Outstanding)";
-        if (pct >= 80.0) return "A  (Excellent)";
-        if (pct >= 70.0) return "B  (Good)";
-        if (pct >= 60.0) return "C  (Satisfactory)";
-        if (pct >= 50.0) return "D  (Pass)";
+    string getGrade() const {
+        double p = getPercentage();
+        if (p >= 90.0) return "A+ (Outstanding)";
+        if (p >= 80.0) return "A  (Excellent)";
+        if (p >= 70.0) return "B  (Good)";
+        if (p >= 60.0) return "C  (Satisfactory)";
+        if (p >= 50.0) return "D  (Pass)";
         return "F  (Needs Improvement)";
     }
 
     // Overloaded stream insertion operator for formatted ASCII scorecard
-    friend std::ostream& operator<<(std::ostream& os, const User& u) {
-        os << "\n+-------------------------------------------------------------+\n";
-        os << "|                     QUIZ SCORE CARD                         |\n";
-        os << "+-------------------------------------------------------------+\n";
-        os << "| Student Name      : " << std::left << std::setw(39) << u.name << " |\n";
-        os << "| Roll Number       : " << std::left << std::setw(39) << u.rollNo << " |\n";
-        os << "| Total Questions   : " << std::left << std::setw(39) << u.totalQuestions << " |\n";
-        os << "| Correct Answers   : " << std::left << std::setw(39) << u.correctCount << " |\n";
-        os << "| Final Score       : " << std::left << std::setw(39)
-           << (std::to_string(u.score) + " / " + std::to_string(u.maxScore)) << " |\n";
-
-        std::ostringstream pctStream;
-        pctStream << std::fixed << std::setprecision(2) << u.getPercentage() << "%";
-        os << "| Percentage        : " << std::left << std::setw(39) << pctStream.str() << " |\n";
-        os << "| Performance Grade : " << std::left << std::setw(39) << u.getGrade() << " |\n";
-        os << "+-------------------------------------------------------------+\n";
+    friend ostream& operator<<(ostream& os, const User& u) {
+        stringstream ss;
+        ss << fixed << setprecision(2) << u.getPercentage() << "%";
+        os << "\n+-------------------------------------------------------------+\n"
+           << "|                     QUIZ SCORE CARD                         |\n"
+           << "+-------------------------------------------------------------+\n"
+           << "| Student Name      : " << left << setw(39) << u.name << " |\n"
+           << "| Roll Number       : " << left << setw(39) << u.rollNo << " |\n"
+           << "| Total Questions   : " << left << setw(39) << u.totalQuestions << " |\n"
+           << "| Correct Answers   : " << left << setw(39) << u.correctCount << " |\n"
+           << "| Final Score       : " << left << setw(39) << (to_string(u.score) + " / " + to_string(u.maxScore)) << " |\n"
+           << "| Percentage        : " << left << setw(39) << ss.str() << " |\n"
+           << "| Performance Grade : " << left << setw(39) << u.getGrade() << " |\n"
+           << "+-------------------------------------------------------------+\n";
         return os;
     }
 };
 
 // ============================================================================
-// SECTION 5: QUIZ CONTROLLER (QuizManager)
-// Demonstrates: Polymorphic Collection, Dynamic Allocation, File I/O Streams
+// 6. QUIZ CONTROLLER (QuizManager)
+// Demonstrates: Polymorphic Vector, Dynamic Memory (new/delete), File Streams
 // ============================================================================
 
 class QuizManager {
 private:
-    std::vector<Question*> questions; // Heterogeneous collection of Question base pointers
-
-    Question* parseLine(const std::string& line, int lineNum) {
-        std::stringstream ss(line);
-        std::string token;
-        std::vector<std::string> tokens;
-
-        while (std::getline(ss, token, '|')) {
-            tokens.push_back(Question::trim(token));
-        }
-
-        if (tokens.empty()) throw InvalidFormatException(line, lineNum);
-
-        std::string type = Question::toUpper(tokens[0]);
-        int newId = static_cast<int>(questions.size()) + 1;
-
-        if (type == "MCQ") {
-            if (tokens.size() < 8) throw InvalidFormatException(line, lineNum);
-            std::string text = tokens[1];
-            std::vector<std::string> opts = {tokens[2], tokens[3], tokens[4], tokens[5]};
-            char correctOpt = tokens[6].empty() ? 'A' : tokens[6][0];
-            int points = 1;
-            try { points = std::stoi(tokens[7]); } catch (...) { points = 1; }
-            return new MCQQuestion(newId, text, opts, correctOpt, points);
-
-        } else if (type == "TF") {
-            if (tokens.size() < 4) throw InvalidFormatException(line, lineNum);
-            std::string text = tokens[1];
-            std::string boolStr = Question::toUpper(tokens[2]);
-            bool correctBool = (boolStr == "TRUE" || boolStr == "T" || boolStr == "1");
-            int points = 1;
-            try { points = std::stoi(tokens[3]); } catch (...) { points = 1; }
-            return new TrueFalseQuestion(newId, text, correctBool, points);
-
-        } else if (type == "FIB") {
-            if (tokens.size() < 4) throw InvalidFormatException(line, lineNum);
-            std::string text = tokens[1];
-            std::string answer = tokens[2];
-            int points = 1;
-            try { points = std::stoi(tokens[3]); } catch (...) { points = 1; }
-            return new FillInBlankQuestion(newId, text, answer, points);
-
-        } else {
-            throw InvalidFormatException("Unknown question type: " + type, lineNum);
-        }
-    }
+    vector<Question*> questions;
 
 public:
     QuizManager() {}
-
-    // Destructor: Clean up dynamically allocated memory (RAII / Rule of Three)
-    ~QuizManager() {
-        clearQuestions();
-    }
-
-    QuizManager(const QuizManager&) = delete;
-    QuizManager& operator=(const QuizManager&) = delete;
+    ~QuizManager() { clearQuestions(); }
 
     void clearQuestions() {
-        for (Question* q : questions) {
-            delete q; // Calls virtual destructor of derived class properly
-        }
+        for (Question* q : questions) delete q; // Calls derived virtual destructor
         questions.clear();
     }
 
     size_t getQuestionCount() const { return questions.size(); }
 
-    // Creates a default question file if not already present
-    static void ensureDefaultQuestionsFile(const std::string& filePath) {
-        std::ifstream checkFile(filePath);
-        if (checkFile.is_open()) {
-            checkFile.close();
-            return; // File already exists
-        }
+    // Creates default question bank if missing
+    static void ensureDefaultQuestionsFile(const string& filePath) {
+        ifstream check(filePath);
+        if (check.is_open()) return;
 
-        std::ofstream defaultFile(filePath);
-        if (defaultFile.is_open()) {
-            defaultFile << "# C++ OOP Quiz Repository (Delimited by |)\n";
-            defaultFile << "MCQ|What is the typical size of an empty class in C++?|1 byte|0 bytes|4 bytes|Undefined|A|2\n";
-            defaultFile << "TF|A constructor in C++ can be declared as virtual.|False|1\n";
-            defaultFile << "MCQ|Which OOP feature is resolved at runtime using a vtable?|Polymorphism|Encapsulation|Abstraction|Data Hiding|A|2\n";
-            defaultFile << "FIB|The concept of binding data and functions into a single unit is called _____|encapsulation|2\n";
-            defaultFile << "TF|Friend functions can access private members of a class.|True|1\n";
-            defaultFile << "MCQ|Which operator CANNOT be overloaded in C++?|:: (Scope Resolution)|+ (Addition)|[] (Subscript)|= (Assignment)|A|2\n";
-            defaultFile << "FIB|A class containing at least one pure virtual function is called an _____ class|abstract|2\n";
-            defaultFile << "TF|An abstract class can be directly instantiated.|False|1\n";
-            defaultFile << "MCQ|What form of inheritance does C++ support that Java does NOT support natively?|Multiple Inheritance|Single Inheritance|Multilevel Inheritance|Hierarchical Inheritance|A|2\n";
-            defaultFile << "FIB|The mechanism of deriving a class from an existing class is called _____|inheritance|2\n";
-            defaultFile.close();
+        ofstream file(filePath);
+        if (file.is_open()) {
+            file << "# C++ OOP Quiz Repository (Delimited by |)\n"
+                 << "MCQ|What is the typical size of an empty class in C++?|1 byte|0 bytes|4 bytes|Undefined|A|2\n"
+                 << "TF|A constructor in C++ can be declared as virtual.|False|1\n"
+                 << "MCQ|Which OOP feature is resolved at runtime using a vtable?|Polymorphism|Encapsulation|Abstraction|Data Hiding|A|2\n"
+                 << "FIB|The concept of binding data and functions into a single unit is called _____|encapsulation|2\n"
+                 << "TF|Friend functions can access private members of a class.|True|1\n"
+                 << "MCQ|Which operator CANNOT be overloaded in C++?|:: (Scope Resolution)|+ (Addition)|[] (Subscript)|= (Assignment)|A|2\n"
+                 << "FIB|A class containing at least one pure virtual function is called an _____ class|abstract|2\n"
+                 << "TF|An abstract class can be directly instantiated.|False|1\n"
+                 << "MCQ|What form of inheritance does C++ support that Java does NOT support natively?|Multiple Inheritance|Single Inheritance|Multilevel Inheritance|Hierarchical Inheritance|A|2\n"
+                 << "FIB|The mechanism of deriving a class from an existing class is called _____|inheritance|2\n";
+            file.close();
         }
     }
 
-    void loadQuestions(const std::string& filePath) {
+    // Loads questions from file
+    void loadQuestions(const string& filePath) {
         clearQuestions();
         ensureDefaultQuestionsFile(filePath);
 
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            throw FileNotFoundException(filePath);
-        }
+        ifstream file(filePath);
+        if (!file.is_open()) throw QuizException("Could not open question file: " + filePath);
 
-        std::string line;
-        int lineNum = 0;
-        while (std::getline(file, line)) {
-            lineNum++;
-            std::string trimmed = Question::trim(line);
-            if (trimmed.empty() || trimmed[0] == '#') continue;
+        string line;
+        while (getline(file, line)) {
+            line = trim(line);
+            if (line.empty() || line[0] == '#') continue;
 
-            Question* q = parseLine(trimmed, lineNum);
-            if (q != nullptr) questions.push_back(q);
+            stringstream ss(line);
+            string token;
+            vector<string> tokens;
+            while (getline(ss, token, '|')) tokens.push_back(trim(token));
+
+            if (tokens.empty()) continue;
+            string type = toUpper(tokens[0]);
+            int id = (int)questions.size() + 1;
+
+            if (type == "MCQ" && tokens.size() >= 8) {
+                vector<string> opts = {tokens[2], tokens[3], tokens[4], tokens[5]};
+                char correctOpt = tokens[6].empty() ? 'A' : tokens[6][0];
+                int pts = 1;
+                try { pts = stoi(tokens[7]); } catch (...) { pts = 1; }
+                questions.push_back(new MCQQuestion(id, tokens[1], opts, correctOpt, pts));
+            } else if (type == "TF" && tokens.size() >= 4) {
+                string bStr = toUpper(tokens[2]);
+                bool isTrue = (bStr == "TRUE" || bStr == "T" || bStr == "1");
+                int pts = 1;
+                try { pts = stoi(tokens[3]); } catch (...) { pts = 1; }
+                questions.push_back(new TrueFalseQuestion(id, tokens[1], isTrue, pts));
+            } else if (type == "FIB" && tokens.size() >= 4) {
+                int pts = 1;
+                try { pts = stoi(tokens[3]); } catch (...) { pts = 1; }
+                questions.push_back(new FillInBlankQuestion(id, tokens[1], tokens[2], pts));
+            }
         }
         file.close();
     }
 
-    void startQuiz(const std::string& studentName, const std::string& rollNo,
-                   const std::string& resultsFilePath) {
+    // Runs examination session
+    void startQuiz(const string& studentName, const string& rollNo, const string& resultsFile) {
         if (questions.empty()) {
-            std::cout << "\n [!] Error: No questions loaded in the quiz system!\n";
+            cout << "\n [!] Question bank is empty!\n";
             return;
         }
 
         User student(studentName, rollNo);
-        int totalMaxScore = 0;
-        int correctCount = 0;
+        int totalMax = 0, correctCount = 0;
+        for (Question* q : questions) totalMax += q->getPoints();
 
-        for (const auto& q : questions) {
-            totalMaxScore += q->getPoints();
-        }
+        cout << "\n============================================================\n"
+             << "                 ONLINE EXAMINATION STARTED                 \n"
+             << " Candidate : " << studentName << " (Roll: " << rollNo << ")\n"
+             << " Questions : " << questions.size() << " | Total Points: " << totalMax << "\n"
+             << "============================================================\n";
 
-        std::cout << "\n============================================================\n";
-        std::cout << "               ONLINE EXAMINATION COMMENCED                 \n";
-        std::cout << " Candidate : " << studentName << " (Roll: " << rollNo << ")\n";
-        std::cout << " Questions : " << questions.size() << " | Total Points: " << totalMaxScore << "\n";
-        std::cout << "============================================================\n";
+        for (Question* q : questions) {
+            q->display(); // Polymorphic display via vtable
 
-        for (size_t i = 0; i < questions.size(); ++i) {
-            Question* q = questions[i];
+            cout << " Your Answer >> ";
+            string userAns;
+            getline(cin, userAns);
 
-            // Polymorphic call to display()
-            q->display();
-
-            std::cout << " Your Answer >> ";
-            std::string userAnswer;
-            std::getline(std::cin, userAnswer);
-
-            // Polymorphic call to checkAnswer()
-            if (q->checkAnswer(userAnswer)) {
-                std::cout << " >> [CORRECT!] +" << q->getPoints() << " points.\n";
+            if (q->checkAnswer(userAns)) { // Polymorphic answer check
+                cout << " >> [CORRECT!] +" << q->getPoints() << " points.\n";
                 student.addScore(q->getPoints());
                 correctCount++;
             } else {
-                std::cout << " >> [INCORRECT!] Correct answer was: " 
-                          << q->getCorrectAnswer() << "\n";
+                cout << " >> [INCORRECT!] Correct answer was: " << q->getCorrectAnswer() << "\n";
             }
         }
 
-        student.setQuizStats(correctCount, static_cast<int>(questions.size()), totalMaxScore);
+        student.setStats(correctCount, (int)questions.size(), totalMax);
+        cout << student; // Overloaded operator<< prints scorecard
 
-        // Operator Overloading call: std::cout << student;
-        std::cout << student;
-
-        // Save result to file
-        std::ofstream outFile(resultsFilePath, std::ios::app);
+        ofstream outFile(resultsFile, ios::app);
         if (outFile.is_open()) {
-            std::time_t now = std::time(nullptr);
-            char timeStr[64];
-            std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
-
             outFile << student.getRollNo() << "|"
                     << student.getName() << "|"
                     << student.getScore() << "/" << student.getMaxScore() << "|"
-                    << std::fixed << std::setprecision(1) << student.getPercentage() << "%|"
+                    << fixed << setprecision(1) << student.getPercentage() << "%|"
                     << student.getGrade() << "|"
-                    << timeStr << "\n";
+                    << getCurrentTime() << "\n";
             outFile.close();
-            std::cout << " [System] Result recorded successfully in: " << resultsFilePath << "\n";
+            cout << " [System] Result recorded successfully in: " << resultsFile << "\n";
         }
     }
 
+    // Displays all questions in repository
     void displayAllQuestions() const {
         if (questions.empty()) {
-            std::cout << "\n [!] Question bank is empty.\n";
+            cout << "\n [!] Question bank is empty.\n";
             return;
         }
-
-        std::cout << "\n============================================================\n";
-        std::cout << "                 QUESTION BANK INVENTORY                    \n";
-        std::cout << "============================================================\n";
-        for (const auto& q : questions) {
-            q->display(); // Polymorphic call
-            std::cout << " [Metadata] Type: " << q->getType()
-                      << " | Correct Answer: " << q->getCorrectAnswer() << "\n";
+        cout << "\n============================================================\n"
+             << "                  QUESTION BANK INVENTORY                   \n"
+             << "============================================================\n";
+        for (const Question* q : questions) {
+            q->display();
+            cout << " [Details] Type: " << q->getType() << " | Answer: " << q->getCorrectAnswer() << "\n";
         }
-        std::cout << "============================================================\n";
+        cout << "============================================================\n";
     }
 
-    void addQuestionInteractive(const std::string& filePath) {
-        std::cout << "\n============================================================\n";
-        std::cout << "                    ADD NEW QUESTION                        \n";
-        std::cout << "============================================================\n";
-        std::cout << " Select Question Type:\n";
-        std::cout << "   1. Multiple Choice Question (MCQ)\n";
-        std::cout << "   2. True / False (TF)\n";
-        std::cout << "   3. Fill in the Blanks (FIB)\n";
-        std::cout << " Choice (1-3): ";
+    // Admin interactive question authoring
+    void addQuestionInteractive(const string& filePath) {
+        cout << "\n============================================================\n"
+             << "                     ADD NEW QUESTION                       \n"
+             << "============================================================\n"
+             << " Select Type (1: MCQ, 2: True/False, 3: Fill Blanks): ";
+        string chStr; getline(cin, chStr);
+        int choice = 1; try { choice = stoi(chStr); } catch (...) { choice = 1; }
 
-        std::string choiceStr;
-        std::getline(std::cin, choiceStr);
-        int choice = 1;
-        try { choice = std::stoi(choiceStr); } catch (...) { choice = 1; }
+        cout << " Enter Question Statement: ";
+        string text; getline(cin, text);
 
-        std::cout << " Enter Question Statement: ";
-        std::string text;
-        std::getline(std::cin, text);
-
-        std::cout << " Enter Points for this question: ";
-        std::string ptsStr;
-        std::getline(std::cin, ptsStr);
-        int points = 1;
-        try { points = std::stoi(ptsStr); } catch (...) { points = 1; }
+        cout << " Enter Points for this question: ";
+        string ptsStr; getline(cin, ptsStr);
+        int points = 1; try { points = stoi(ptsStr); } catch (...) { points = 1; }
 
         Question* newQ = nullptr;
-        int newId = static_cast<int>(questions.size()) + 1;
+        int newId = (int)questions.size() + 1;
 
         if (choice == 1) {
-            std::vector<std::string> opts(4);
+            vector<string> opts(4);
             for (int i = 0; i < 4; ++i) {
-                char label = static_cast<char>('A' + i);
-                std::cout << " Enter Option [" << label << "]: ";
-                std::getline(std::cin, opts[i]);
+                cout << " Enter Option [" << (char)('A' + i) << "]: ";
+                getline(cin, opts[i]);
             }
-            std::cout << " Enter Correct Option (A, B, C, or D): ";
-            std::string optChar;
-            std::getline(std::cin, optChar);
-            char cOpt = optChar.empty() ? 'A' : std::toupper(optChar[0]);
-
+            cout << " Enter Correct Option (A, B, C, or D): ";
+            string optChar; getline(cin, optChar);
+            char cOpt = optChar.empty() ? 'A' : toupper(optChar[0]);
             newQ = new MCQQuestion(newId, text, opts, cOpt, points);
-
         } else if (choice == 2) {
-            std::cout << " Enter Correct Answer ([T]rue or [F]alse): ";
-            std::string tfStr;
-            std::getline(std::cin, tfStr);
-            std::string clean = Question::toUpper(Question::trim(tfStr));
-            bool cBool = (clean == "T" || clean == "TRUE" || clean == "1");
-
-            newQ = new TrueFalseQuestion(newId, text, cBool, points);
-
+            cout << " Enter Correct Answer ([T]rue or [F]alse): ";
+            string tfStr; getline(cin, tfStr);
+            string clean = toUpper(trim(tfStr));
+            bool isTrue = (clean == "T" || clean == "TRUE" || clean == "1");
+            newQ = new TrueFalseQuestion(newId, text, isTrue, points);
         } else if (choice == 3) {
-            std::cout << " Enter Expected Word/Phrase: ";
-            std::string answer;
-            std::getline(std::cin, answer);
-
-            newQ = new FillInBlankQuestion(newId, text, answer, points);
-
+            cout << " Enter Expected Word/Phrase: ";
+            string ans; getline(cin, ans);
+            newQ = new FillInBlankQuestion(newId, text, ans, points);
         } else {
-            std::cout << " [!] Invalid option selected.\n";
+            cout << " [!] Invalid option.\n";
             return;
         }
 
         if (newQ != nullptr) {
             questions.push_back(newQ);
-            std::ofstream outFile(filePath, std::ios::app);
-            if (outFile.is_open()) {
-                outFile << newQ->serialize() << "\n";
-                outFile.close();
-                std::cout << "\n [Success] Question appended to '" << filePath << "' successfully!\n";
+            ofstream out(filePath, ios::app);
+            if (out.is_open()) {
+                out << newQ->serialize() << "\n";
+                out.close();
+                cout << "\n [Success] Question added and saved to file successfully!\n";
             }
         }
     }
 
-    void displayLeaderboard(const std::string& resultsFilePath) const {
-        std::ifstream inFile(resultsFilePath);
+    // Displays historical results
+    void displayLeaderboard(const string& resultsFile) const {
+        ifstream inFile(resultsFile);
         if (!inFile.is_open()) {
-            std::cout << "\n [Info] No examination attempts recorded yet.\n";
+            cout << "\n [Info] No examination attempts recorded yet.\n";
             return;
         }
 
-        std::cout << "\n+------------------------------------------------------------------------------------------+\n";
-        std::cout << "|                               EXAMINATION SCORE LOG                                      |\n";
-        std::cout << "+------------+----------------------+-----------+------------+--------------------+--------+\n";
-        std::cout << "| Roll No    | Student Name         | Score     | Percentage | Grade              | Time   |\n";
-        std::cout << "+------------+----------------------+-----------+------------+--------------------+--------+\n";
+        cout << "\n+------------------------------------------------------------------------------------------+\n"
+             << "|                               EXAMINATION SCORE LOG                                      |\n"
+             << "+------------+----------------------+-----------+------------+--------------------+--------+\n"
+             << "| Roll No    | Student Name         | Score     | Percentage | Grade              | Time   |\n"
+             << "+------------+----------------------+-----------+------------+--------------------+--------+\n";
 
-        std::string line;
+        string line;
         bool hasRecords = false;
+        while (getline(inFile, line)) {
+            line = trim(line);
+            if (line.empty()) continue;
 
-        while (std::getline(inFile, line)) {
-            std::string trimmed = Question::trim(line);
-            if (trimmed.empty()) continue;
-
-            std::stringstream ss(trimmed);
-            std::string roll, name, score, pct, grade, time;
-            if (std::getline(ss, roll, '|') &&
-                std::getline(ss, name, '|') &&
-                std::getline(ss, score, '|') &&
-                std::getline(ss, pct, '|') &&
-                std::getline(ss, grade, '|') &&
-                std::getline(ss, time, '|')) {
-
+            stringstream ss(line);
+            string roll, name, score, pct, grade, timeStr;
+            if (getline(ss, roll, '|') && getline(ss, name, '|') &&
+                getline(ss, score, '|') && getline(ss, pct, '|') &&
+                getline(ss, grade, '|') && getline(ss, timeStr, '|')) {
                 hasRecords = true;
-                std::cout << "| " << std::left << std::setw(10) << roll
-                          << " | " << std::left << std::setw(20) << name
-                          << " | " << std::left << std::setw(9)  << score
-                          << " | " << std::left << std::setw(10) << pct
-                          << " | " << std::left << std::setw(18) << grade
-                          << " | " << time << " |\n";
+                cout << "| " << left << setw(10) << roll
+                     << " | " << left << setw(20) << name
+                     << " | " << left << setw(9)  << score
+                     << " | " << left << setw(10) << pct
+                     << " | " << left << setw(18) << grade
+                     << " | " << timeStr << " |\n";
             }
         }
-
-        if (!hasRecords) {
-            std::cout << "|                           No attempts recorded yet.                                      |\n";
-        }
-        std::cout << "+------------+----------------------+-----------+------------+--------------------+--------+\n";
+        if (!hasRecords) cout << "|                           No attempts recorded yet.                                      |\n";
+        cout << "+------------+----------------------+-----------+------------+--------------------+--------+\n";
         inFile.close();
     }
 };
 
 // ============================================================================
-// SECTION 6: MAIN INTERACTIVE CONSOLE MENU
+// 7. MENU & CONCEPTS GUIDE
 // ============================================================================
 
 void printHeader() {
-    std::cout << "\n=================================================================\n";
-    std::cout << "        C++ OBJECT-ORIENTED ONLINE EXAMINATION SYSTEM            \n";
-    std::cout << "                 [Single-File Academic Edition]                  \n";
-    std::cout << "=================================================================\n";
+    cout << "\n=================================================================\n"
+         << "        C++ OBJECT-ORIENTED ONLINE EXAMINATION SYSTEM            \n"
+         << "                 [Simplified Academic Edition]                   \n"
+         << "=================================================================\n";
 }
 
 void printMenu() {
-    std::cout << "\n------------------------- MAIN MENU -----------------------------\n";
-    std::cout << "  1. Start Quiz / Examination\n";
-    std::cout << "  2. View Question Bank (All Questions)\n";
-    std::cout << "  3. Add New Question (Admin Mode)\n";
-    std::cout << "  4. View Scoreboard & Past Results\n";
-    std::cout << "  5. OOP Concepts Demonstrated in this Project\n";
-    std::cout << "  6. Reload Questions from File\n";
-    std::cout << "  7. Exit\n";
-    std::cout << "-----------------------------------------------------------------\n";
-    std::cout << " Enter choice (1-7): ";
+    cout << "\n------------------------- MAIN MENU -----------------------------\n"
+         << "  1. Start Quiz / Examination\n"
+         << "  2. View Question Bank (All Questions)\n"
+         << "  3. Add New Question (Admin Mode)\n"
+         << "  4. View Scoreboard & Past Results\n"
+         << "  5. OOP Concepts Demonstrated in this Project\n"
+         << "  6. Reload Questions from File\n"
+         << "  7. Exit\n"
+         << "-----------------------------------------------------------------\n"
+         << " Enter choice (1-7): ";
 }
 
 void printOOPConcepts() {
-    std::cout << "\n=================================================================\n";
-    std::cout << "           OBJECT-ORIENTED PROGRAMMING CONCEPTS MAPPING          \n";
-    std::cout << "=================================================================\n";
-    std::cout << " 1. ENCAPSULATION:\n";
-    std::cout << "    - 'Question', 'User', and 'QuizManager' hide sensitive data\n";
-    std::cout << "      behind private/protected access specifiers.\n\n";
-    std::cout << " 2. DATA ABSTRACTION:\n";
-    std::cout << "    - Base class 'Question' is abstract; contains pure virtual\n";
-    std::cout << "      functions (display() = 0, checkAnswer() = 0, etc.).\n\n";
-    std::cout << " 3. HIERARCHICAL INHERITANCE:\n";
-    std::cout << "    - 'MCQQuestion', 'TrueFalseQuestion', and 'FillInBlankQuestion'\n";
-    std::cout << "      derive from the base 'Question' class.\n\n";
-    std::cout << " 4. DYNAMIC POLYMORPHISM (vtable & vptr):\n";
-    std::cout << "    - 'QuizManager' uses 'vector<Question*>'. Function calls like\n";
-    std::cout << "      'q->display()' and 'q->checkAnswer()' are dispatched at runtime.\n\n";
-    std::cout << " 5. VIRTUAL DESTRUCTOR:\n";
-    std::cout << "    - 'virtual ~Question()' ensures derived class destructors are called\n";
-    std::cout << "      when deleting objects via base class pointers.\n\n";
-    std::cout << " 6. OPERATOR OVERLOADING:\n";
-    std::cout << "    - Overloaded 'operator<<' for 'Question' and 'User' scorecards.\n\n";
-    std::cout << " 7. EXCEPTION HANDLING:\n";
-    std::cout << "    - Custom hierarchy: 'QuizException', 'FileNotFoundException',\n";
-    std::cout << "      'InvalidFormatException' with try-catch blocks.\n\n";
-    std::cout << " 8. FILE STREAMS & PERSISTENCE:\n";
-    std::cout << "    - std::ifstream reads delimited question files.\n";
-    std::cout << "    - std::ofstream appends student results to an audit log.\n";
-    std::cout << "=================================================================\n";
+    cout << "\n=================================================================\n"
+         << "           OBJECT-ORIENTED PROGRAMMING CONCEPTS MAPPING          \n"
+         << "=================================================================\n"
+         << " 1. ENCAPSULATION: Data members are protected/private in Question,\n"
+         << "    User, and QuizManager classes with public getters and methods.\n\n"
+         << " 2. ABSTRACTION: Base class 'Question' is abstract; contains pure\n"
+         << "    virtual functions (display() = 0, checkAnswer() = 0, etc.).\n\n"
+         << " 3. INHERITANCE: Hierarchical derivation where MCQQuestion,\n"
+         << "    TrueFalseQuestion, and FillInBlankQuestion inherit from Question.\n\n"
+         << " 4. DYNAMIC POLYMORPHISM: vector<Question*> holds base pointers.\n"
+         << "    Dynamic dispatch (q->display()) resolves via vtable at runtime.\n\n"
+         << " 5. VIRTUAL DESTRUCTOR: virtual ~Question() ensures derived class\n"
+         << "    destructors execute properly, preventing memory leaks.\n\n"
+         << " 6. OPERATOR OVERLOADING: friend operator<< overloads stream insertion\n"
+         << "    for clean, formatted User score card display.\n\n"
+         << " 7. EXCEPTION HANDLING: Custom QuizException hierarchy wrapped in\n"
+         << "    try-catch blocks for robust file parsing and validation.\n\n"
+         << " 8. FILE STREAMS: ifstream parses delimited questions from questions.txt;\n"
+         << "    ofstream appends examination results to results.txt.\n"
+         << "=================================================================\n";
 }
 
+// ============================================================================
+// 8. MAIN EXECUTION FUNCTION
+// ============================================================================
+
 int main() {
-    const std::string questionsPath = "questions.txt";
-    const std::string resultsPath = "results.txt";
+    const string questionsPath = "questions.txt";
+    const string resultsPath = "results.txt";
 
     QuizManager manager;
     printHeader();
 
     try {
         manager.loadQuestions(questionsPath);
-        std::cout << " [System] Loaded " << manager.getQuestionCount()
-                  << " questions from '" << questionsPath << "'.\n";
-    } catch (const QuizException& ex) {
-        std::cerr << " [Initialization Warning] " << ex.what() << "\n";
+        cout << " [System] Loaded " << manager.getQuestionCount()
+             << " questions from '" << questionsPath << "'.\n";
+    } catch (const exception& ex) {
+        cout << " [Warning] " << ex.what() << "\n";
     }
 
     bool running = true;
     while (running) {
         printMenu();
-        std::string choiceInput;
-        std::getline(std::cin, choiceInput);
+        string choiceStr;
+        getline(cin, choiceStr);
 
         int choice = 0;
-        try { choice = std::stoi(choiceInput); } catch (...) { choice = 0; }
+        try { choice = stoi(choiceStr); } catch (...) { choice = 0; }
 
         switch (choice) {
             case 1: { // Start Quiz
                 if (manager.getQuestionCount() == 0) {
-                    std::cout << "\n [!] Question bank is empty. Please add questions first.\n";
+                    cout << "\n [!] Question bank is empty. Please add questions first.\n";
                     break;
                 }
-                std::cout << "\n Enter Student Full Name: ";
-                std::string name;
-                std::getline(std::cin, name);
+                cout << "\n Enter Student Full Name: ";
+                string name; getline(cin, name);
                 if (name.empty()) name = "Student";
 
-                std::cout << " Enter Student Roll / ID Number: ";
-                std::string roll;
-                std::getline(std::cin, roll);
+                cout << " Enter Student Roll / ID Number: ";
+                string roll; getline(cin, roll);
                 if (roll.empty()) roll = "N/A";
 
                 manager.startQuiz(name, roll, resultsPath);
                 break;
             }
-            case 2: { // View All Questions
+            case 2: // View All Questions
                 manager.displayAllQuestions();
                 break;
-            }
-            case 3: { // Add Question (Admin)
+            case 3: // Add New Question (Admin)
                 manager.addQuestionInteractive(questionsPath);
                 break;
-            }
-            case 4: { // View Scoreboard
+            case 4: // View Scoreboard
                 manager.displayLeaderboard(resultsPath);
                 break;
-            }
-            case 5: { // OOP Concepts Guide
+            case 5: // OOP Concepts Guide
                 printOOPConcepts();
                 break;
-            }
-            case 6: { // Reload Questions
+            case 6: // Reload Questions
                 try {
                     manager.loadQuestions(questionsPath);
-                    std::cout << "\n [Success] Reloaded " << manager.getQuestionCount()
-                              << " questions from '" << questionsPath << "'.\n";
-                } catch (const QuizException& ex) {
-                    std::cerr << "\n [Error] " << ex.what() << "\n";
+                    cout << "\n [Success] Reloaded " << manager.getQuestionCount()
+                         << " questions from '" << questionsPath << "'.\n";
+                } catch (const exception& ex) {
+                    cout << "\n [Error] " << ex.what() << "\n";
                 }
                 break;
-            }
-            case 7: { // Exit
-                std::cout << "\n Exiting Online Examination System. Thank you!\n";
+            case 7: // Exit
+                cout << "\n Exiting Online Examination System. Thank you!\n";
                 running = false;
                 break;
-            }
             default:
-                std::cout << "\n [!] Invalid selection. Please enter a number between 1 and 7.\n";
+                cout << "\n [!] Invalid selection. Please enter a number between 1 and 7.\n";
                 break;
         }
     }

@@ -1,540 +1,628 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuizMaster .NET | C++ OOP Online Examination System</title>
+  <title>Online Examination Portal | Department of Computer Science & Engineering</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <!-- Canvas Confetti for Celebration (Graceful fallback if offline) -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
-  <!-- Background Decorative Gradient Orbs -->
-  <div class="bg-blur-orb orb-1"></div>
-  <div class="bg-blur-orb orb-2"></div>
-  <div class="bg-blur-orb orb-3"></div>
+  <!-- Top Institutional Bar -->
+  <div class="gov-topbar">
+    <div class="topbar-inner">
+      <div class="gov-meta">
+        <span class="inst-flag">🏛️</span>
+        <span>FACULTY OF ENGINEERING &amp; TECHNOLOGY &bull; AUTONOMOUS EXAMINATION CELL</span>
+      </div>
+      <div class="gov-right">
+        <span class="live-clock" id="live-system-clock">--:--:--</span>
+        <span class="sep">&bull;</span>
+        <span id="header-conn-status" class="status-live"><span class="pulse-indicator"></span> System Online</span>
+        <button id="theme-toggle-btn" class="text-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <span class="theme-icon">🌓</span> <span id="theme-text">Dark View</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
-  <!-- Main Application Wrapper -->
-  <div class="app-container">
-
-    <!-- Top Navigation Bar -->
-    <header class="app-header">
-      <div class="header-brand">
-        <div class="brand-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
+  <!-- Header Banner -->
+  <header class="main-header">
+    <div class="header-inner">
+      <div class="institute-identity">
+        <div class="emblem-wrapper">
+          <div class="emblem-seal">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="24" cy="24" r="21" stroke-width="1.8"/>
+              <path d="M24 8v16l11 6.5"/>
+              <path d="M12 28l12-7 12 7"/>
+              <path d="M16 35h16"/>
+              <circle cx="24" cy="24" r="3" fill="currentColor"/>
+            </svg>
+          </div>
         </div>
-        <div class="brand-text">
-          <h1>QuizMaster <span class="badge-tech">.NET</span></h1>
-          <p class="brand-subtitle">C++ OOP Architecture & Dynamic Polymorphism Engine</p>
+        <div class="institute-info">
+          <div class="dept-line">Department of Computer Science &amp; Engineering</div>
+          <h1 class="portal-title">Computer-Based Examination System</h1>
+          <div class="exam-code-tag">
+            <span>Course Code: <strong>CS-204</strong></span>
+            <span class="dot">&bull;</span>
+            <span>Object-Oriented Programming (C++ &amp; .NET C#)</span>
+            <span class="dot">&bull;</span>
+            <span>Session: <strong>End-Semester 2026</strong></span>
+          </div>
         </div>
       </div>
 
-      <nav class="header-nav">
-        <button class="nav-tab active" data-target="portal-view">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          Exam Portal
+      <!-- Navigation Tabs -->
+      <nav class="portal-nav">
+        <button class="nav-btn active" data-target="portal-view">
+          <span class="nav-icon">📝</span>
+          <span>Exam Hall</span>
         </button>
-        <button class="nav-tab" data-target="leaderboard-view">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-          Leaderboard
+        <button class="nav-btn" data-target="leaderboard-view">
+          <span class="nav-icon">📊</span>
+          <span>Score Records</span>
         </button>
-        <button class="nav-tab" data-target="admin-view">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Question Bank
+        <button class="nav-btn" data-target="admin-view">
+          <span class="nav-icon">📚</span>
+          <span>Question Bank</span>
         </button>
-        <button class="nav-tab" data-target="concepts-view">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          C++ vs .NET
+        <button class="nav-btn" data-target="concepts-view">
+          <span class="nav-icon">📖</span>
+          <span>Viva Handbook</span>
         </button>
       </nav>
+    </div>
+  </header>
 
-      <div class="header-actions">
-        <div class="server-badge" id="server-status-badge">
-          <span class="status-dot"></span>
-          <span class="status-label">Connecting...</span>
+  <!-- Main Container -->
+  <main class="page-body">
+
+    <!-- ======================================================== -->
+    <!-- VIEW 1: CANDIDATE EXAM HALL -->
+    <!-- ======================================================== -->
+    <section id="portal-view" class="view-panel active">
+
+      <!-- 1.1 Candidate Admit Slip & Verification -->
+      <div id="step-landing" class="flow-step active">
+        <div class="paper-card hall-ticket-card">
+          
+          <div class="ticket-header">
+            <div class="ticket-header-title">
+              <span class="ticket-sub">FORM CS-EXAM-01 &bull; CANDIDATE ADMIT VERIFICATION</span>
+              <h2>Examination Desk Login &amp; Attendance Form</h2>
+              <p>Please enter your officially registered student credentials. Your session timer and audit trail will commence immediately upon pressing <strong>"Proceed to Desk"</strong>.</p>
+            </div>
+            <div class="exam-badge-box">
+              <span class="badge-item"><strong>PAPER TYPE</strong> Theory + Practical</span>
+              <span class="badge-item"><strong>TOTAL MARKS</strong> 20+ Points</span>
+              <span class="badge-item"><strong>DURATION</strong> 10 Minutes</span>
+              <span class="badge-item"><strong>NEGATIVE MARKS</strong> None</span>
+            </div>
+          </div>
+
+          <!-- Instructions Notice Paper -->
+          <div class="notice-callout">
+            <div class="notice-title">
+              <span class="notice-icon">⚠️</span>
+              <strong>General Candidate Instructions &amp; Honor Code:</strong>
+            </div>
+            <ul class="notice-list">
+              <li>This test contains multiple question modalities: <strong>Multiple Choice (MCQ)</strong>, <strong>True/False statements</strong>, and <strong>Fill-in-the-Blank conceptual terms</strong>.</li>
+              <li>Dynamic evaluation is handled directly by the C++ Object-Oriented Polymorphism engine implemented in .NET C#.</li>
+              <li>You may navigate between questions using the Question Palette on the right sidebar or with keyboard shortcuts (<code>A, B, C, D</code> for choices; <code>Left/Right Arrow</code> for navigation).</li>
+              <li>Your completed scorecard will be permanently recorded in the institutional audit ledger (<code>results.txt</code>).</li>
+            </ul>
+          </div>
+
+          <form id="candidate-form" class="admit-form" onsubmit="event.preventDefault(); startExam();">
+            <div class="form-grid">
+              
+              <div class="form-field">
+                <label for="student-name">
+                  Candidate Full Name
+                  <span class="req-star">*</span>
+                  <span class="field-hint">(As registered in University Roll)</span>
+                </label>
+                <div class="input-shell">
+                  <span class="shell-icon">👤</span>
+                  <input type="text" id="student-name" placeholder="e.g., Yashraj Kailas Bhagwat" required autofocus>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="student-roll">
+                  University Roll / Hall Ticket No.
+                  <span class="req-star">*</span>
+                  <span class="field-hint">(Unique Candidate Identifier)</span>
+                </label>
+                <div class="input-shell">
+                  <span class="shell-icon">🏷️</span>
+                  <input type="text" id="student-roll" placeholder="e.g., CS202609" required>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Mode Selector -->
+            <div class="mode-bar">
+              <div class="mode-bar-header">
+                <strong>Examination Session Format:</strong>
+              </div>
+              <div class="mode-options-grid">
+                
+                <label class="session-mode-card active">
+                  <input type="radio" name="exam-mode" value="exam" checked>
+                  <div class="card-text">
+                    <div class="mode-heading">
+                      <span class="mode-name">Standard Timed Exam</span>
+                      <span class="rec-pill">Official Record</span>
+                    </div>
+                    <p>Official 10-minute supervised sitting. Final score calculated at submission and logged to the semester scoreboard.</p>
+                  </div>
+                </label>
+
+                <label class="session-mode-card">
+                  <input type="radio" name="exam-mode" value="practice">
+                  <div class="card-text">
+                    <div class="mode-heading">
+                      <span class="mode-name">Self-Study &amp; Viva Review</span>
+                      <span class="rec-pill alt">Untimed</span>
+                    </div>
+                    <p>Untimed practice mode for lab revision, concept exploration, and viva defense preparation.</p>
+                  </div>
+                </label>
+
+              </div>
+            </div>
+
+            <div class="integrity-checkbox-wrap">
+              <label class="integrity-label">
+                <input type="checkbox" id="honor-code-check" required checked>
+                <span>I confirm that I am taking this exam under academic honor guidelines without unauthorized outside assistance.</span>
+              </label>
+            </div>
+
+            <div class="form-action-footer">
+              <div class="desk-indicator">
+                <span class="desk-dot"></span>
+                <span>Workstation Ready &bull; Terminal Decrypted</span>
+              </div>
+              <button type="submit" class="btn btn-navy btn-hero">
+                <span>Proceed to Examination Desk</span>
+                <span class="btn-arrow">&rarr;</span>
+              </button>
+            </div>
+
+          </form>
+
         </div>
-        <button id="theme-toggle-btn" class="icon-btn" title="Toggle Theme" aria-label="Toggle Theme">
-          <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
       </div>
-    </header>
 
-    <!-- Main Content Stage -->
-    <main class="app-main">
-
-      <!-- ======================================================== -->
-      <!-- VIEW 1: EXAM PORTAL (Candidate Entry -> Live Quiz -> Scorecard) -->
-      <!-- ======================================================== -->
-      <section id="portal-view" class="view-panel active">
-
-        <!-- 1.1 Candidate Registration Landing -->
-        <div id="step-landing" class="flow-step active">
-          <div class="hero-card">
-            <div class="hero-header">
-              <span class="badge-pill">Object-Oriented Programming (C++ / .NET)</span>
-              <h2>Online Examination & Skill Assessment</h2>
-              <p>Welcome to the automated exam system powered by dynamic runtime polymorphism. Enter your candidate details below to begin.</p>
+      <!-- 1.2 Active Live Examination Desk -->
+      <div id="step-quiz" class="flow-step">
+        
+        <!-- Proctoring & Progress Strip -->
+        <div class="exam-proctor-bar">
+          
+          <div class="candidate-tag-group">
+            <div class="candidate-avatar" id="candidate-avatar">Y</div>
+            <div class="candidate-text">
+              <div class="c-name" id="bar-candidate-name">Candidate Name</div>
+              <div class="c-roll">Roll No: <strong id="bar-candidate-roll">CS202601</strong></div>
             </div>
+          </div>
 
-            <div class="quiz-info-chips">
-              <div class="info-chip">
-                <span class="chip-icon">📋</span>
-                <div>
-                  <span class="chip-val" id="landing-q-count">11 Questions</span>
-                  <span class="chip-label">Heterogeneous Pool</span>
-                </div>
-              </div>
-              <div class="info-chip">
-                <span class="chip-icon">🎯</span>
-                <div>
-                  <span class="chip-val" id="landing-points">20+ Points</span>
-                  <span class="chip-label">Weighted Scoring</span>
-                </div>
-              </div>
-              <div class="info-chip">
-                <span class="chip-icon">⏱️</span>
-                <div>
-                  <span class="chip-val">10 Mins</span>
-                  <span class="chip-label">Countdown Timer</span>
-                </div>
-              </div>
-              <div class="info-chip">
-                <span class="chip-icon">⚡</span>
-                <div>
-                  <span class="chip-val">vtable / Dynamic</span>
-                  <span class="chip-label">C++ Logic Engine</span>
-                </div>
-              </div>
+          <div class="proctor-center-progress">
+            <div class="progress-meta">
+              <span id="progress-question-text">Question 1 of 12</span>
+              <span id="progress-percentage-text">8% Completed</span>
             </div>
+            <div class="progress-rail">
+              <div class="progress-bar-fill" id="quiz-progress-bar"></div>
+            </div>
+          </div>
 
-            <form id="candidate-form" class="candidate-form" onsubmit="event.preventDefault(); startExam();">
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="student-name">Student Full Name <span class="required">*</span></label>
-                  <input type="text" id="student-name" placeholder="e.g. Yashraj Bhagwat" required autofocus autocomplete="name">
-                </div>
-                <div class="form-group">
-                  <label for="student-roll">University Roll / ID Number <span class="required">*</span></label>
-                  <input type="text" id="student-roll" placeholder="e.g. CS202642" required autocomplete="off">
-                </div>
-              </div>
+          <div class="proctor-timer-card" id="quiz-timer-box">
+            <div class="timer-label">Time Remaining</div>
+            <div class="timer-digits" id="timer-display">10:00</div>
+          </div>
 
-              <div class="mode-selection">
-                <label class="mode-label">Select Examination Mode:</label>
-                <div class="mode-cards">
-                  <label class="mode-card active">
-                    <input type="radio" name="exam-mode" value="exam" checked>
-                    <div class="mode-card-content">
-                      <div class="mode-title">
-                        <span>Formal Exam Mode</span>
-                        <span class="mode-tag">Recommended</span>
-                      </div>
-                      <p>Timed 10-minute session. Answers submitted and graded all together at completion with official score log entry.</p>
-                    </div>
-                  </label>
-                  <label class="mode-card">
-                    <input type="radio" name="exam-mode" value="practice">
-                    <div class="mode-card-content">
-                      <div class="mode-title">
-                        <span>Viva & Practice Mode</span>
-                        <span class="mode-tag practice">Untimed</span>
-                      </div>
-                      <p>No countdown pressure. Great for revision, viva exam defense preparation, and conceptual exploration.</p>
-                    </div>
-                  </label>
-                </div>
-              </div>
+        </div>
 
-              <div class="form-action">
-                <button type="submit" class="btn btn-primary btn-large">
-                  <span>Start Examination</span>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        <!-- Question Paper Stage -->
+        <div class="exam-desk-layout">
+          
+          <!-- Main Question Sheet -->
+          <div class="question-paper-sheet">
+            <div class="paper-card">
+              
+              <div class="question-card-top">
+                <div class="q-number-pill" id="q-number-indicator">QUESTION 01</div>
+                <div class="q-meta-badges">
+                  <span class="academic-tag" id="q-type-badge">Multiple Choice</span>
+                  <span class="points-tag" id="q-points-badge">Marks: 2.0</span>
+                </div>
+                <button class="btn-mark-review" id="btn-flag-toggle" onclick="toggleFlagCurrentQuestion()" title="Mark question for review">
+                  <span class="flag-icon">🔖</span>
+                  <span id="flag-btn-text">Mark for Review</span>
                 </button>
               </div>
-            </form>
+
+              <!-- Question Statement Box -->
+              <div class="question-body">
+                <div class="q-statement-text" id="q-statement">
+                  Loading examination question statement...
+                </div>
+              </div>
+
+              <!-- Answer Responses Container -->
+              <div class="response-container" id="q-response-container">
+                <!-- Injected dynamically: MCQ option rows, TF choices, FIB box -->
+              </div>
+
+              <!-- Action Bar -->
+              <div class="desk-action-bar">
+                
+                <div class="action-left">
+                  <button class="btn btn-secondary" id="btn-prev" onclick="goToPrevQuestion()">
+                    &larr; Previous Question
+                  </button>
+                  <button class="btn btn-ghost" onclick="clearCurrentAnswer()">
+                    Clear Response
+                  </button>
+                </div>
+
+                <div class="action-right">
+                  <button class="btn btn-navy" id="btn-next" onclick="goToNextQuestion()">
+                    Next Question &rarr;
+                  </button>
+                  <button class="btn btn-submit-exam" id="btn-submit-exam" onclick="confirmSubmitExam()">
+                    <span>Final Submission</span>
+                    <span class="btn-tick">✓</span>
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
           </div>
+
+          <!-- Right Sidebar: Question Palette & Navigation Index -->
+          <aside class="palette-sidebar">
+            <div class="paper-card palette-card">
+              
+              <div class="sidebar-header">
+                <h3>Question Paper Index</h3>
+                <span class="sidebar-sub">Click any question number to jump</span>
+              </div>
+
+              <!-- Question Grid -->
+              <div class="palette-numbered-grid" id="question-palette-grid">
+                <!-- 1, 2, 3... generated dynamically -->
+              </div>
+
+              <!-- Legend -->
+              <div class="palette-legend-sheet">
+                <div class="legend-row">
+                  <span class="palette-sample current"></span>
+                  <span>Current Question</span>
+                </div>
+                <div class="legend-row">
+                  <span class="palette-sample answered"></span>
+                  <span>Answered / Saved</span>
+                </div>
+                <div class="legend-row">
+                  <span class="palette-sample flagged"></span>
+                  <span>Marked for Review</span>
+                </div>
+                <div class="legend-row">
+                  <span class="palette-sample unanswered"></span>
+                  <span>Not Yet Answered</span>
+                </div>
+              </div>
+
+              <div class="palette-action-wrap">
+                <button class="btn btn-submit-outline btn-block" onclick="confirmSubmitExam()">
+                  Submit Test Paper
+                </button>
+              </div>
+
+            </div>
+          </aside>
+
         </div>
 
-        <!-- 1.2 Active Live Examination Screen -->
-        <div id="step-quiz" class="flow-step">
-          <!-- Quiz Top Toolbar -->
-          <div class="quiz-topbar">
-            <div class="candidate-badge">
-              <span class="avatar-circle" id="candidate-avatar">S</span>
+      </div>
+
+      <!-- 1.3 Formal Academic Transcript / Scorecard -->
+      <div id="step-results" class="flow-step">
+        <div class="transcript-wrapper">
+          
+          <!-- Official Academic Grade Slip -->
+          <div class="paper-card transcript-sheet">
+            
+            <div class="transcript-seal-watermark">PASSED</div>
+
+            <div class="transcript-header">
+              <div class="transcript-inst">
+                <h3>INSTITUTE OF TECHNOLOGY &amp; APPLIED COMPUTING</h3>
+                <p>Office of the Controller of Examinations &bull; Official Evaluation Slip</p>
+                <div class="transcript-meta-strip">
+                  <span>SUBJECT: Object-Oriented Programming (C++ / .NET)</span>
+                  <span>CODE: CS-204</span>
+                  <span>SESSION: 2026</span>
+                </div>
+              </div>
+              <div class="transcript-stamp-box">
+                <div class="stamp-border">
+                  <span class="stamp-top">VERIFIED</span>
+                  <span class="stamp-val" id="score-grade-letter">A</span>
+                  <span class="stamp-sub" id="score-grade-pct">85.0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Student Summary Details Table -->
+            <div class="transcript-details-table">
+              <div class="detail-cell">
+                <span class="c-lbl">Candidate Name:</span>
+                <strong class="c-val" id="score-candidate-heading">Candidate Name</strong>
+              </div>
+              <div class="detail-cell">
+                <span class="c-lbl">Hall Ticket / Roll No:</span>
+                <strong class="c-val" id="res-roll">CS202609</strong>
+              </div>
+              <div class="detail-cell">
+                <span class="c-lbl">Total Marks Obtained:</span>
+                <strong class="c-val highlight-val" id="res-score">17 / 20</strong>
+              </div>
+              <div class="detail-cell">
+                <span class="c-lbl">Performance Classification:</span>
+                <strong class="c-val" id="res-grade">First Class with Distinction</strong>
+              </div>
+              <div class="detail-cell">
+                <span class="c-lbl">Questions Evaluated:</span>
+                <strong class="c-val" id="res-correct-count">10 of 12 Correct</strong>
+              </div>
+              <div class="detail-cell">
+                <span class="c-lbl">Result Status:</span>
+                <strong class="c-val status-passed" id="score-status-badge">PASS</strong>
+              </div>
+            </div>
+
+            <!-- Examiner Actions Bar -->
+            <div class="transcript-actions-bar">
+              <button class="btn btn-navy" onclick="resetQuiz()">
+                <span>&circlearrowleft; Retake Assessment</span>
+              </button>
+              <button class="btn btn-secondary" onclick="window.print()">
+                <span>🖨️ Print Official Score Slip</span>
+              </button>
+              <button class="btn btn-ghost" onclick="switchToTab('leaderboard-view')">
+                View Class Ledger &rarr;
+              </button>
+            </div>
+
+            <!-- Technical Certification Footnote -->
+            <div class="audit-footnote">
+              <div class="audit-icon">🛡️</div>
+              <div class="audit-text">
+                <strong>Cryptographic &amp; Runtime Polymorphism Audit:</strong>
+                All responses above were verified and calculated via C# runtime virtual method table dispatch (<code>Question.CheckAnswer()</code>), strictly mirroring C++ abstract pure-virtual method resolution. Audit entry saved to <code>results.txt</code>.
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Detailed Answer Audit Sheet -->
+          <div class="paper-card answer-audit-sheet">
+            <div class="sheet-title-row">
               <div>
-                <strong id="bar-candidate-name">Student</strong>
-                <span class="roll-tag" id="bar-candidate-roll">ID</span>
+                <h3>Itemized Answer Evaluation Sheet</h3>
+                <p>Complete question-by-question breakdown with submitted response and official marking rubric.</p>
               </div>
+              <span class="badge-audited">Full Item Audit</span>
             </div>
 
-            <div class="quiz-progress-section">
-              <div class="progress-labels">
-                <span id="progress-question-text">Question 1 of 11</span>
-                <span id="progress-percentage-text">10% Completed</span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-fill" id="quiz-progress-bar"></div>
-              </div>
-            </div>
-
-            <div class="timer-box" id="quiz-timer-box">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span id="timer-display">10:00</span>
+            <div class="audit-items-list" id="review-questions-list">
+              <!-- Dynamically generated audit cards -->
             </div>
           </div>
 
-          <!-- Main Question Box & Palette Container -->
-          <div class="quiz-workspace">
-            
-            <!-- Left Side: Current Question Card -->
-            <div class="question-main-panel">
-              <div class="question-card" id="current-question-card">
-                
-                <div class="question-card-header">
-                  <div class="type-badges">
-                    <span class="badge-type" id="q-type-badge">MCQ</span>
-                    <span class="badge-points" id="q-points-badge">+2 Points</span>
-                  </div>
-                  <button class="btn-flag" id="btn-flag-toggle" onclick="toggleFlagCurrentQuestion()" title="Mark for review">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                    <span id="flag-btn-text">Flag for Review</span>
-                  </button>
-                </div>
+        </div>
+      </div>
 
-                <div class="question-statement-box">
-                  <h3 id="q-statement">Loading question statement...</h3>
-                </div>
+    </section>
 
-                <!-- Dynamic Answer Response Container -->
-                <div class="question-response-area" id="q-response-container">
-                  <!-- Injected dynamically via JS: MCQ options, TF buttons, or FIB input -->
-                </div>
+    <!-- ======================================================== -->
+    <!-- VIEW 2: INSTITUTIONAL SCOREBOARD & LEDGER -->
+    <!-- ======================================================== -->
+    <section id="leaderboard-view" class="view-panel">
+      <div class="paper-card">
+        
+        <div class="section-top-bar">
+          <div>
+            <span class="ticket-sub">ACADEMIC AUDIT LOG &bull; PERSISTENT LEDGER</span>
+            <h2>Official Examination Result Ledger</h2>
+            <p>Direct live records read from <code>results.txt</code>, capturing candidates evaluated across both C++ and .NET sittings.</p>
+          </div>
+          <button class="btn btn-secondary" onclick="loadLeaderboard()">
+            <span>🔄 Refresh Records</span>
+          </button>
+        </div>
 
-                <!-- Bottom Navigation & Action Controls -->
-                <div class="question-card-footer">
-                  <button class="btn btn-outline" id="btn-prev" onclick="goToPrevQuestion()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-                    Previous
-                  </button>
-
-                  <div class="center-actions">
-                    <button class="btn btn-subtle" onclick="clearCurrentAnswer()">Clear Answer</button>
-                  </div>
-
-                  <div class="right-actions">
-                    <button class="btn btn-primary" id="btn-next" onclick="goToNextQuestion()">
-                      Next
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
-                    <button class="btn btn-success" id="btn-submit-exam" onclick="confirmSubmitExam()">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                      Submit Exam
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            <!-- Right Side: Question Navigation Palette -->
-            <div class="question-sidebar">
-              <div class="palette-card">
-                <h4>Question Palette</h4>
-                <div class="palette-grid" id="question-palette-grid">
-                  <!-- Numbered tiles generated dynamically (1, 2, 3...) -->
-                </div>
-
-                <div class="palette-legend">
-                  <div class="legend-item"><span class="legend-dot current"></span> Current</div>
-                  <div class="legend-item"><span class="legend-dot answered"></span> Answered</div>
-                  <div class="legend-item"><span class="legend-dot flagged"></span> Flagged</div>
-                  <div class="legend-item"><span class="legend-dot unanswered"></span> Unanswered</div>
-                </div>
-
-                <div class="palette-footer">
-                  <button class="btn btn-outline btn-block" onclick="confirmSubmitExam()">
-                    Finish & Submit
-                  </button>
-                </div>
-              </div>
-            </div>
-
+        <!-- Academic Metrics Grid -->
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <span class="m-val" id="lb-total-attempts">0</span>
+            <span class="m-lbl">Total Candidates</span>
+          </div>
+          <div class="metric-box">
+            <span class="m-val highlight-m" id="lb-highest-score">-</span>
+            <span class="m-lbl">Highest Mark</span>
+          </div>
+          <div class="metric-box">
+            <span class="m-val" id="lb-avg-percentage">0%</span>
+            <span class="m-lbl">Batch Mean Percentage</span>
+          </div>
+          <div class="metric-box">
+            <span class="m-val" id="lb-pass-rate">0%</span>
+            <span class="m-lbl">Qualifying Pass Rate</span>
           </div>
         </div>
 
-        <!-- 1.3 Detailed Results Scorecard Screen -->
-        <div id="step-results" class="flow-step">
-          <div class="results-container">
-            
-            <!-- Hero Scorecard Summary -->
-            <div class="scorecard-header-card">
-              <div class="score-radial-wrapper">
-                <div class="score-circle" id="score-grade-circle">
-                  <span class="score-grade-letter" id="score-grade-letter">A+</span>
-                  <span class="score-grade-pct" id="score-grade-pct">92.5%</span>
-                </div>
-              </div>
-
-              <div class="score-details-main">
-                <span class="score-status-badge" id="score-status-badge">EXAM PASSED</span>
-                <h2 id="score-candidate-heading">Congratulations, Student!</h2>
-                <p id="score-summary-subtitle">Your exam has been evaluated and permanently logged to <code>results.txt</code> using the .NET C++ OOP engine.</p>
-                
-                <div class="score-stat-grid">
-                  <div class="stat-pill">
-                    <span class="stat-label">Candidate Roll</span>
-                    <strong class="stat-value" id="res-roll">CS202601</strong>
-                  </div>
-                  <div class="stat-pill">
-                    <span class="stat-label">Total Score</span>
-                    <strong class="stat-value" id="res-score">18 / 20</strong>
-                  </div>
-                  <div class="stat-pill">
-                    <span class="stat-label">Correct Answers</span>
-                    <strong class="stat-value" id="res-correct-count">9 of 11</strong>
-                  </div>
-                  <div class="stat-pill">
-                    <span class="stat-label">Performance Grade</span>
-                    <strong class="stat-value" id="res-grade">A (Excellent)</strong>
-                  </div>
-                </div>
-
-                <div class="score-actions">
-                  <button class="btn btn-primary" onclick="resetQuiz()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 2v6h6M21.5 22v-6h-6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"/></svg>
-                    Take Quiz Again
-                  </button>
-                  <button class="btn btn-outline" onclick="window.print()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                    Print Scorecard
-                  </button>
-                  <button class="btn btn-subtle" onclick="switchToTab('leaderboard-view')">
-                    View Scoreboard &rarr;
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Technical OOP Engine Verification Note -->
-            <div class="oop-verification-banner">
-              <div class="banner-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-              </div>
-              <div class="banner-text">
-                <strong>Runtime Polymorphic Dispatch Verified:</strong>
-                <p>Every response above was dynamically routed through <code>Question.CheckAnswer()</code> runtime dispatch matching C++ pure virtual method table execution, with persistent record synchronization in <code>results.txt</code>.</p>
-              </div>
-            </div>
-
-            <!-- Detailed Question-by-Question Review Breakdown -->
-            <div class="review-breakdown-section">
-              <div class="section-title-row">
-                <h3>Detailed Answer Breakdown & Verification</h3>
-                <span class="breakdown-subtitle">Review each question, your submitted answer, and the expected logic.</span>
-              </div>
-
-              <div class="review-list" id="review-questions-list">
-                <!-- Dynamically generated cards for each question -->
-              </div>
-            </div>
-
+        <!-- Filter & Search Toolbar -->
+        <div class="table-toolbar">
+          <div class="search-box">
+            <span class="search-ico">🔍</span>
+            <input type="text" id="leaderboard-search" placeholder="Filter by candidate name or roll number..." oninput="filterLeaderboard()">
           </div>
+          <span class="record-meta-count" id="leaderboard-count-text">Displaying all records</span>
         </div>
 
-      </section>
+        <!-- Tabular Ledger Sheet -->
+        <div class="table-wrap">
+          <table class="academic-table" id="leaderboard-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Rank</th>
+                <th>Roll No.</th>
+                <th>Candidate Name</th>
+                <th>Score</th>
+                <th>Percentage</th>
+                <th>Performance Division</th>
+                <th>Evaluation Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody">
+              <tr>
+                <td colspan="7" class="loading-state">Loading examination records from file...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      <!-- ======================================================== -->
-      <!-- VIEW 2: LEADERBOARD & RESULTS AUDIT LOG -->
-      <!-- ======================================================== -->
-      <section id="leaderboard-view" class="view-panel">
-        <div class="content-container">
-          <div class="page-header">
-            <div>
-              <h2>Examination Scoreboard & Audit Log</h2>
-              <p>Historical exam records directly read from <code>results.txt</code> across both C++ and .NET sessions.</p>
-            </div>
-            <button class="btn btn-outline" onclick="loadLeaderboard()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
-              Refresh Data
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- VIEW 3: QUESTION BANK REPOSITORY (ADMIN) -->
+    <!-- ======================================================== -->
+    <section id="admin-view" class="view-panel">
+      <div class="paper-card">
+        
+        <div class="section-top-bar">
+          <div>
+            <span class="ticket-sub">CURRICULUM INVENTORY &bull; REPOSITORY MANAGER</span>
+            <h2>Course Question Paper Repository</h2>
+            <p>Inspect, manage, and append new validated test items directly to the shared <code>questions.txt</code> repository.</p>
+          </div>
+          <div class="header-btn-row">
+            <button class="btn btn-secondary" onclick="loadAllQuestionsAdmin()">
+              <span>🔄 Sync from questions.txt</span>
+            </button>
+            <button class="btn btn-navy" onclick="openAddQuestionModal()">
+              <span>➕ Author New Question</span>
             </button>
           </div>
-
-          <!-- Summary Metric Cards -->
-          <div class="stats-cards-row">
-            <div class="metric-card">
-              <span class="metric-icon">👥</span>
-              <div>
-                <span class="metric-number" id="lb-total-attempts">0</span>
-                <span class="metric-label">Total Submissions</span>
-              </div>
-            </div>
-            <div class="metric-card">
-              <span class="metric-icon">🏆</span>
-              <div>
-                <span class="metric-number" id="lb-highest-score">-</span>
-                <span class="metric-label">Highest Score</span>
-              </div>
-            </div>
-            <div class="metric-card">
-              <span class="metric-icon">📈</span>
-              <div>
-                <span class="metric-number" id="lb-avg-percentage">0%</span>
-                <span class="metric-label">Average Percentage</span>
-              </div>
-            </div>
-            <div class="metric-card">
-              <span class="metric-icon">✅</span>
-              <div>
-                <span class="metric-number" id="lb-pass-rate">0%</span>
-                <span class="metric-label">Pass Rate</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Search & Filter Bar -->
-          <div class="table-filter-bar">
-            <div class="search-input-wrapper">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" id="leaderboard-search" placeholder="Search by student name or roll number..." oninput="filterLeaderboard()">
-            </div>
-            <span class="records-count" id="leaderboard-count-text">Showing all records</span>
-          </div>
-
-          <!-- Scoreboard Table Card -->
-          <div class="data-table-card">
-            <div class="table-responsive">
-              <table class="data-table" id="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th style="width: 70px;">Rank</th>
-                    <th>Roll Number</th>
-                    <th>Student Name</th>
-                    <th>Score</th>
-                    <th>Percentage</th>
-                    <th>Performance Grade</th>
-                    <th>Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody id="leaderboard-tbody">
-                  <tr>
-                    <td colspan="7" class="text-center loading-cell">Loading leaderboard records...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
-      </section>
 
-      <!-- ======================================================== -->
-      <!-- VIEW 3: QUESTION BANK & ADMIN AUTHORING -->
-      <!-- ======================================================== -->
-      <section id="admin-view" class="view-panel">
-        <div class="content-container">
-          <div class="page-header">
-            <div>
-              <h2>Question Bank Inventory & Admin Authoring</h2>
-              <p>Manage, inspect, and append new questions live into <code>questions.txt</code>.</p>
-            </div>
-            <div class="header-buttons">
-              <button class="btn btn-outline" onclick="loadAllQuestionsAdmin()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
-                Reload from File
-              </button>
-              <button class="btn btn-primary" onclick="openAddQuestionModal()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add New Question
-              </button>
-            </div>
-          </div>
-
-          <!-- Filter Pills -->
-          <div class="filter-pills-row">
-            <button class="pill-btn active" data-filter="ALL" onclick="filterQuestionBank('ALL')">All Questions (<span id="count-all">0</span>)</button>
-            <button class="pill-btn" data-filter="MCQ" onclick="filterQuestionBank('MCQ')">MCQ (<span id="count-mcq">0</span>)</button>
-            <button class="pill-btn" data-filter="TF" onclick="filterQuestionBank('TF')">True / False (<span id="count-tf">0</span>)</button>
-            <button class="pill-btn" data-filter="FIB" onclick="filterQuestionBank('FIB')">Fill in Blanks (<span id="count-fib">0</span>)</button>
-          </div>
-
-          <!-- Question Bank Cards Container -->
-          <div class="question-cards-grid" id="admin-questions-grid">
-            <!-- Dynamically populated question cards -->
-          </div>
+        <!-- Filter Bar -->
+        <div class="filter-strip">
+          <button class="filter-pill active" data-filter="ALL" onclick="filterQuestionBank('ALL')">
+            All Questions (<span id="count-all">0</span>)
+          </button>
+          <button class="filter-pill" data-filter="MCQ" onclick="filterQuestionBank('MCQ')">
+            Multiple Choice (<span id="count-mcq">0</span>)
+          </button>
+          <button class="filter-pill" data-filter="TF" onclick="filterQuestionBank('TF')">
+            True / False (<span id="count-tf">0</span>)
+          </button>
+          <button class="filter-pill" data-filter="FIB" onclick="filterQuestionBank('FIB')">
+            Fill in Blanks (<span id="count-fib">0</span>)
+          </button>
         </div>
-      </section>
 
-      <!-- ======================================================== -->
-      <!-- VIEW 4: C++ vs .NET ARCHITECTURE & VIVA GUIDE -->
-      <!-- ======================================================== -->
-      <section id="concepts-view" class="view-panel">
-        <div class="content-container">
-          <div class="page-header">
-            <div>
-              <h2>Object-Oriented Architecture: C++ & .NET Comparison</h2>
-              <p>Academic walkthrough showing how core C++ OOP paradigms were preserved and ported into modern C# .NET.</p>
-            </div>
-            <span class="badge-pill">Lab Viva & Presentation Reference</span>
+        <!-- Cards Layout -->
+        <div class="question-inventory-list" id="admin-questions-grid">
+          <!-- Dynamically populated question cards -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- VIEW 4: LAB VIVA VOCE & OOP ARCHITECTURE HANDBOOK -->
+    <!-- ======================================================== -->
+    <section id="concepts-view" class="view-panel">
+      <div class="paper-card">
+        
+        <div class="section-top-bar">
+          <div>
+            <span class="ticket-sub">FACULTY OF ENGINEERING &bull; LAB PRACTICAL VIVA GUIDE</span>
+            <h2>Object-Oriented Programming Architecture: C++ &amp; .NET C#</h2>
+            <p>Comprehensive technical walkthrough demonstrating how classical C++ object models translate cleanly into modern .NET runtime assemblies.</p>
           </div>
+          <span class="faculty-tag">Curriculum Document CS-204-VIVA</span>
+        </div>
 
-          <!-- OOP Concepts Accordion / Cards -->
-          <div class="concept-cards-column">
-            
-            <!-- 1. Data Abstraction -->
-            <div class="concept-card">
-              <div class="concept-header">
-                <span class="concept-index">01</span>
-                <div>
-                  <h3>Data Abstraction (Pure Virtual vs Abstract Methods)</h3>
-                  <p>Hides the evaluation mechanics behind a unified contract; neither C++ nor C# allows direct instantiation of the base class.</p>
-                </div>
+        <div class="curriculum-sections">
+          
+          <!-- Module 1 -->
+          <article class="handbook-module">
+            <div class="mod-head">
+              <span class="mod-num">01</span>
+              <div>
+                <h3>Data Abstraction &amp; Pure Virtual Interface Contracts</h3>
+                <p>Both standard C++ and C# enforce interface contracts by disallowing base instantiation and mandating derived implementations.</p>
               </div>
-              <div class="code-comparison-grid">
-                <div class="code-box">
-                  <div class="code-box-title"><span class="lang-tag cpp">C++ (quiz_system.cpp)</span></div>
-                  <pre><code>// Abstract Base Class
+            </div>
+            <div class="code-pair-grid">
+              <div class="code-panel">
+                <div class="code-panel-label"><span class="badge-lang cpp">C++ Architecture (quiz_system.cpp)</span></div>
+                <pre><code>// Abstract Base Class with Pure Virtual Method
 class Question {
 protected:
     int id; string questionText; int points;
 public:
     virtual ~Question() {} // Memory safety
-    // Pure virtual function (Dynamic polymorphism)
+    // Pure Virtual Function (= 0)
     virtual bool checkAnswer(string userAns) const = 0;
 };</code></pre>
-                </div>
-                <div class="code-box">
-                  <div class="code-box-title"><span class="lang-tag csharp">C# (.NET Core / QuizWebServer.cs)</span></div>
-                  <pre><code>// Abstract Base Class in C#
+              </div>
+              <div class="code-panel">
+                <div class="code-panel-label"><span class="badge-lang cs">C# .NET Architecture (QuizWebServer.cs)</span></div>
+                <pre><code>// Abstract Base Class with Abstract Method
 public abstract class Question {
     protected int id;
     protected string questionText;
     protected int points;
-    // Abstract method forces derived implementation
+    // Abstract Method enforced by compiler
     public abstract bool CheckAnswer(string userAns);
 }</code></pre>
-                </div>
               </div>
             </div>
+          </article>
 
-            <!-- 2. Inheritance Hierarchy -->
-            <div class="concept-card">
-              <div class="concept-header">
-                <span class="concept-index">02</span>
-                <div>
-                  <h3>Hierarchical Inheritance</h3>
-                  <p>Derived classes <code>MCQQuestion</code>, <code>TrueFalseQuestion</code>, and <code>FillInBlankQuestion</code> extend common state from <code>Question</code>.</p>
-                </div>
+          <!-- Module 2 -->
+          <article class="handbook-module">
+            <div class="mod-head">
+              <span class="mod-num">02</span>
+              <div>
+                <h3>Hierarchical Inheritance &amp; Specialized Question Modalities</h3>
+                <p>Concrete subclasses inherit base attributes (<code>id, text, points</code>) while encapsulating their individual response representations.</p>
               </div>
-              <div class="code-comparison-grid">
-                <div class="code-box">
-                  <div class="code-box-title"><span class="lang-tag cpp">C++ (quiz_system.cpp)</span></div>
-                  <pre><code>class MCQQuestion : public Question {
+            </div>
+            <div class="code-pair-grid">
+              <div class="code-panel">
+                <div class="code-panel-label"><span class="badge-lang cpp">C++ Architecture</span></div>
+                <pre><code>class MCQQuestion : public Question {
     vector&lt;string&gt; options;
     char correctOption;
 public:
@@ -543,10 +631,10 @@ public:
         : Question(id, t, p), options(opts), 
           correctOption(toupper(c)) {}
 };</code></pre>
-                </div>
-                <div class="code-box">
-                  <div class="code-box-title"><span class="lang-tag csharp">C# (.NET Core / QuizWebServer.cs)</span></div>
-                  <pre><code>public class MCQQuestion : Question {
+              </div>
+              <div class="code-panel">
+                <div class="code-panel-label"><span class="badge-lang cs">C# .NET Architecture</span></div>
+                <pre><code>public class MCQQuestion : Question {
     private List&lt;string&gt; options;
     private char correctOption;
     public MCQQuestion(int id, string t, List&lt;string&gt; opts, 
@@ -556,147 +644,157 @@ public:
         this.correctOption = char.ToUpper(c);
     }
 }</code></pre>
-                </div>
               </div>
             </div>
+          </article>
 
-            <!-- 3. Dynamic Polymorphism -->
-            <div class="concept-card">
-              <div class="concept-header">
-                <span class="concept-index">03</span>
-                <div>
-                  <h3>Dynamic Polymorphism & Runtime Dispatch</h3>
-                  <p>Processing heterogeneous questions via base references without conditional type branching (no <code>if type == "MCQ"</code>).</p>
-                </div>
+          <!-- Module 3 -->
+          <article class="handbook-module">
+            <div class="mod-head">
+              <span class="mod-num">03</span>
+              <div>
+                <h3>Dynamic Polymorphism &amp; Runtime VTable Resolution</h3>
+                <p>Heterogeneous question evaluation without brittle conditional type-checking (no <code>if (type == "MCQ")</code>).</p>
               </div>
-              <div class="code-comparison-grid">
-                <div class="code-box">
-                  <div class="code-box-title"><span class="lang-tag cpp">C++ (quiz_system.cpp)</span></div>
-                  <pre><code>// Dynamic dispatch via VTable pointer
+            </div>
+            <div class="code-pair-grid">
+              <div class="code-panel">
+                <div class="code-panel-label"><span class="badge-lang cpp">C++ Dynamic Dispatch</span></div>
+                <pre><code>// Runtime dispatch via VTable pointer
 vector&lt;Question*&gt; questions;
 for (Question* q : questions) {
-    if (q-&gt;checkAnswer(userAns)) { // Runtime vtable
+    if (q-&gt;checkAnswer(userAns)) { // VTable lookup
         student.addScore(q-&gt;getPoints());
     }
 }</code></pre>
-                </div>
-                <div class="code-box">
-                  <div class="code-box-title"><span class="lang-tag csharp">C# (.NET Core / QuizWebServer.cs)</span></div>
-                  <pre><code>// Dynamic dispatch via CLR virtual method table
+              </div>
+              <div class="code-panel">
+                <div class="code-panel-label"><span class="badge-lang cs">C# Dynamic Dispatch</span></div>
+                <pre><code>// Dynamic dispatch via CLR virtual dispatch
 List&lt;Question&gt; questions;
 foreach (Question q in questions) {
-    if (q.CheckAnswer(userAns)) { // Runtime dispatch
+    if (q.CheckAnswer(userAns)) { // MethodTable lookup
         student.AddScore(q.Points);
     }
 }</code></pre>
-                </div>
               </div>
             </div>
+          </article>
 
-            <!-- 4. Memory Safety & Lifecycle -->
-            <div class="concept-card">
-              <div class="concept-header">
-                <span class="concept-index">04</span>
-                <div>
-                  <h3>Memory Safety: Virtual Destructors vs CLR Garbage Collection</h3>
-                  <p>Preventing memory leaks when destroying polymorphic derived objects.</p>
-                </div>
+          <!-- Module 4 -->
+          <article class="handbook-module">
+            <div class="mod-head">
+              <span class="mod-num">04</span>
+              <div>
+                <h3>Memory Lifecycle: Virtual Destructors vs CLR Garbage Collection</h3>
+                <p>Contrasting manual resource destruction with managed generational garbage collection.</p>
               </div>
-              <div class="code-comparison-grid">
-                <div class="code-box">
-                  <div class="code-box-title"><span class="lang-tag cpp">C++ (quiz_system.cpp)</span></div>
-                  <pre><code>// Explicit Virtual Destructor
+            </div>
+            <div class="code-pair-grid">
+              <div class="code-panel">
+                <div class="code-panel-label"><span class="badge-lang cpp">C++ Explicit Cleanup</span></div>
+                <pre><code>// Explicit Virtual Destructor
 virtual ~Question() {} 
 
-// Memory cleanup in QuizManager destructor:
+// Safe polymorphic destruction:
 for (Question* q : questions) {
-    delete q; // Safely executes derived destructor first
+    delete q; // Calls derived destructor first
 }</code></pre>
-                </div>
-                <div class="code-box">
-                  <div class="code-box-title"><span class="lang-tag csharp">C# (.NET Core / QuizWebServer.cs)</span></div>
-                  <pre><code>// Managed Memory in .NET
-// Destructors are not needed for managed types.
-// The CLR Garbage Collector (GC) automatically tracks
-// generational references and reclaims dead objects.</code></pre>
-                </div>
+              </div>
+              <div class="code-panel">
+                <div class="code-panel-label"><span class="badge-lang cs">.NET Automatic GC</span></div>
+                <pre><code>// In C# .NET:
+// Managed types do not require explicit destructors.
+// The CLR Generational Garbage Collector (Gen 0, 1, 2)
+// automatically cleans up unreferenced objects.</code></pre>
               </div>
             </div>
-
-          </div>
-
-          <!-- Viva Q&A Cheat Sheet -->
-          <div class="viva-section">
-            <h3>Top 5 Viva Questions & Fast Answers</h3>
-            <div class="viva-grid">
-              <div class="viva-item">
-                <strong>Q1: Why is the destructor declared as <code>virtual</code> in C++?</strong>
-                <p>Because when deleting a derived object via a base pointer (<code>delete q;</code>), a non-virtual destructor only frees base slice memory, causing a memory leak. A virtual destructor ensures derived destructors execute first.</p>
-              </div>
-              <div class="viva-item">
-                <strong>Q2: What is the benefit of pure virtual functions (<code>= 0</code>)?</strong>
-                <p>It creates an abstract contract that guarantees any derived question (MCQ, True/False, FIB) must provide its own answer validation logic, preventing accidental empty implementations.</p>
-              </div>
-              <div class="viva-item">
-                <strong>Q3: How does the system handle heterogeneous question types?</strong>
-                <p>Through dynamic polymorphism: storing base references in a collection (<code>vector&lt;Question*&gt;</code> in C++, <code>List&lt;Question&gt;</code> in C#) and letting the vtable dispatch the right method at runtime.</p>
-              </div>
-              <div class="viva-item">
-                <strong>Q4: How does data persistence work across both systems?</strong>
-                <p>Both the C++ console app and .NET web server share the exact same pipe-delimited flat files (<code>questions.txt</code> and <code>results.txt</code>), ensuring 100% interoperability and persistent auditing.</p>
-              </div>
-            </div>
-          </div>
+          </article>
 
         </div>
-      </section>
 
-    </main>
+        <!-- Academic Viva Voce Question Bank -->
+        <div class="viva-questions-sheet">
+          <div class="viva-head">
+            <h3>Standard Viva Voce Examination Questions</h3>
+            <p>Key theoretical and implementation questions commonly posed by university laboratory examiners:</p>
+          </div>
+          <div class="viva-cards-grid">
+            <div class="viva-card">
+              <div class="q-tag">Q1</div>
+              <h4>Why is declaring a virtual destructor essential in C++ when using polymorphism?</h4>
+              <p>When deleting a derived object via a base pointer (<code>delete q;</code>), if the destructor is not virtual, only the base class destructor is invoked. The derived class destructor never runs, causing resource and memory leaks.</p>
+            </div>
+            <div class="viva-card">
+              <div class="q-tag">Q2</div>
+              <h4>What is the difference between early binding and late binding?</h4>
+              <p>Early (static) binding resolves function addresses at compile time. Late (dynamic) binding determines which method to call at runtime via the object's Virtual Method Table (VTable), enabling true polymorphism.</p>
+            </div>
+            <div class="viva-card">
+              <div class="q-tag">Q3</div>
+              <h4>Can an abstract class have constructors in C++ and C#?</h4>
+              <p>Yes. Although an abstract class cannot be instantiated directly, its constructor is executed by derived class constructors to initialize base member variables (such as <code>id</code>, <code>questionText</code>, and <code>points</code>).</p>
+            </div>
+            <div class="viva-card">
+              <div class="q-tag">Q4</div>
+              <h4>How do the C++ and .NET implementations maintain shared state?</h4>
+              <p>Both applications interoperate directly over shared flat-file streams (<code>questions.txt</code> and <code>results.txt</code>) using standardized delimited serialization, allowing cross-platform persistence without proprietary database engines.</p>
+            </div>
+          </div>
+        </div>
 
-    <!-- Footer -->
-    <footer class="app-footer">
-      <div class="footer-content">
-        <p><strong>C++ OOP Online Examination System</strong> &bull; .NET Framework & Web Architecture Mini-Project Edition</p>
-        <span class="footer-meta">Compatible with <code>quiz_system.exe</code> &bull; Dual Engine Flat-File Persistence</span>
       </div>
-    </footer>
+    </section>
 
-  </div>
+  </main>
+
+  <!-- Institutional Footer -->
+  <footer class="portal-footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <strong>Examination Management Portal &bull; Academic Year 2026</strong>
+        <p>Faculty of Engineering &amp; Technology &bull; Single-File Academic Project Edition</p>
+      </div>
+      <div class="footer-right">
+        <span>Dual-Engine Interoperability: <code>quiz_system.cpp</code> &harr; <code>QuizWebServer.cs</code></span>
+      </div>
+    </div>
+  </footer>
 
   <!-- ======================================================== -->
-  <!-- MODAL: SUBMISSION CONFIRMATION -->
+  <!-- MODAL: CONFIRM EXAM SUBMISSION -->
   <!-- ======================================================== -->
   <div id="submit-confirm-modal" class="modal-backdrop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="modal-icon-badge warning">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
+    <div class="paper-card modal-card">
+      <div class="modal-top">
+        <div class="modal-icon">⚠️</div>
         <div>
-          <h3>Submit Examination?</h3>
-          <p>Please review your progress before final evaluation.</p>
+          <h3>Submit Examination Paper?</h3>
+          <p>Please review your answer coverage before final submission.</p>
         </div>
       </div>
-      <div class="modal-body">
-        <div class="modal-stat-row">
-          <div class="stat-box">
-            <span class="box-num" id="modal-answered-count">0</span>
-            <span class="box-lbl">Answered</span>
+      <div class="modal-content">
+        <div class="status-summary-row">
+          <div class="stat-bubble answered">
+            <span class="b-val" id="modal-answered-count">0</span>
+            <span class="b-lbl">Answered</span>
           </div>
-          <div class="stat-box">
-            <span class="box-num" id="modal-unanswered-count">0</span>
-            <span class="box-lbl">Unanswered</span>
+          <div class="stat-bubble unanswered">
+            <span class="b-val" id="modal-unanswered-count">0</span>
+            <span class="b-lbl">Unanswered</span>
           </div>
-          <div class="stat-box">
-            <span class="box-num" id="modal-flagged-count">0</span>
-            <span class="box-lbl">Flagged</span>
+          <div class="stat-bubble flagged">
+            <span class="b-val" id="modal-flagged-count">0</span>
+            <span class="b-lbl">Review Flagged</span>
           </div>
         </div>
-        <p class="modal-note" id="modal-warning-text">Once submitted, your answers will be processed by the .NET polymorphism engine and recorded in <code>results.txt</code>.</p>
+        <p class="modal-alert-note" id="modal-warning-text">
+          Once submitted, your responses will be processed by the polymorphic evaluation engine and permanently written to <code>results.txt</code>.
+        </p>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeSubmitModal()">Return to Exam</button>
-        <button class="btn btn-primary" onclick="executeFinalSubmit()">Confirm & Submit</button>
+      <div class="modal-footer-row">
+        <button class="btn btn-secondary" onclick="closeSubmitModal()">Return to Exam Paper</button>
+        <button class="btn btn-navy" onclick="executeFinalSubmit()">Confirm Final Submission</button>
       </div>
     </div>
   </div>
@@ -705,63 +803,61 @@ for (Question* q : questions) {
   <!-- MODAL: ADD QUESTION (ADMIN) -->
   <!-- ======================================================== -->
   <div id="add-question-modal" class="modal-backdrop">
-    <div class="modal-card modal-wide">
-      <div class="modal-header">
-        <div class="modal-icon-badge primary">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        </div>
+    <div class="paper-card modal-card modal-wide">
+      <div class="modal-top">
+        <div class="modal-icon">📝</div>
         <div>
-          <h3>Add New Question to Repository</h3>
-          <p>The new question will be saved directly into <code>questions.txt</code>.</p>
+          <h3>Author New Examination Question</h3>
+          <p>The validated question will be saved into <code>questions.txt</code>.</p>
         </div>
       </div>
       
       <form id="add-question-form" onsubmit="event.preventDefault(); submitNewQuestion();">
-        <div class="modal-body">
-          <div class="form-row">
-            <div class="form-group">
+        <div class="modal-content">
+          <div class="form-grid">
+            <div class="form-field">
               <label for="new-q-type">Question Type</label>
-              <select id="new-q-type" onchange="updateNewQuestionFormFields()">
-                <option value="MCQ">Multiple Choice (MCQ)</option>
-                <option value="TF">True / False</option>
-                <option value="FIB">Fill in the Blanks</option>
+              <select id="new-q-type" class="std-select" onchange="updateNewQuestionFormFields()">
+                <option value="MCQ">Multiple Choice Question (MCQ)</option>
+                <option value="TF">True / False Statement</option>
+                <option value="FIB">Fill in the Blanks (Conceptual)</option>
               </select>
             </div>
-            <div class="form-group">
-              <label for="new-q-points">Points / Marks</label>
-              <input type="number" id="new-q-points" value="2" min="1" max="10" required>
+            <div class="form-field">
+              <label for="new-q-points">Weightage / Marks</label>
+              <input type="number" id="new-q-points" value="2" min="1" max="10" required class="std-input">
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="new-q-text">Question Statement <span class="required">*</span></label>
-            <textarea id="new-q-text" rows="3" placeholder="Enter the complete question statement..." required></textarea>
+          <div class="form-field">
+            <label for="new-q-text">Question Statement <span class="req-star">*</span></label>
+            <textarea id="new-q-text" rows="3" placeholder="Enter clear academic question statement..." required class="std-textarea"></textarea>
           </div>
 
           <!-- MCQ Options Section -->
           <div id="section-mcq-fields">
-            <label class="section-label">Multiple Choice Options (A, B, C, D):</label>
-            <div class="mcq-input-grid">
-              <div class="input-with-label">
-                <span class="opt-prefix">A</span>
+            <label class="sub-label">Four Options (A, B, C, D):</label>
+            <div class="mcq-author-grid">
+              <div class="input-shell opt-shell">
+                <span class="shell-tag">A</span>
                 <input type="text" id="new-opt-a" placeholder="Option A text">
               </div>
-              <div class="input-with-label">
-                <span class="opt-prefix">B</span>
+              <div class="input-shell opt-shell">
+                <span class="shell-tag">B</span>
                 <input type="text" id="new-opt-b" placeholder="Option B text">
               </div>
-              <div class="input-with-label">
-                <span class="opt-prefix">C</span>
+              <div class="input-shell opt-shell">
+                <span class="shell-tag">C</span>
                 <input type="text" id="new-opt-c" placeholder="Option C text">
               </div>
-              <div class="input-with-label">
-                <span class="opt-prefix">D</span>
+              <div class="input-shell opt-shell">
+                <span class="shell-tag">D</span>
                 <input type="text" id="new-opt-d" placeholder="Option D text">
               </div>
             </div>
-            <div class="form-group mt-3">
-              <label for="new-mcq-correct">Correct Option</label>
-              <select id="new-mcq-correct">
+            <div class="form-field mt-3">
+              <label for="new-mcq-correct">Correct Option Key</label>
+              <select id="new-mcq-correct" class="std-select">
                 <option value="A">Option A</option>
                 <option value="B">Option B</option>
                 <option value="C">Option C</option>
@@ -772,9 +868,9 @@ for (Question* q : questions) {
 
           <!-- True/False Section -->
           <div id="section-tf-fields" style="display: none;">
-            <div class="form-group">
-              <label for="new-tf-correct">Correct Answer</label>
-              <select id="new-tf-correct">
+            <div class="form-field">
+              <label for="new-tf-correct">Correct Logical Value</label>
+              <select id="new-tf-correct" class="std-select">
                 <option value="True">True</option>
                 <option value="False">False</option>
               </select>
@@ -783,25 +879,25 @@ for (Question* q : questions) {
 
           <!-- FIB Section -->
           <div id="section-fib-fields" style="display: none;">
-            <div class="form-group">
-              <label for="new-fib-correct">Expected Word / Phrase</label>
-              <input type="text" id="new-fib-correct" placeholder="e.g. encapsulation">
+            <div class="form-field">
+              <label for="new-fib-correct">Expected Word or Term</label>
+              <input type="text" id="new-fib-correct" placeholder="e.g., encapsulation" class="std-input">
             </div>
           </div>
 
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" onclick="closeAddQuestionModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save to questions.txt</button>
+        <div class="modal-footer-row">
+          <button type="button" class="btn btn-secondary" onclick="closeAddQuestionModal()">Cancel</button>
+          <button type="submit" class="btn btn-navy">Save to questions.txt</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Notification Toast Container -->
+  <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Frontend Logic Script -->
+  <!-- Application Logic -->
   <script src="app.js"></script>
 </body>
 </html>

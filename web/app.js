@@ -1,9 +1,9 @@
 /**
  * ============================================================================
- *           QUIZMASTER .NET | FRONTEND LOGIC & ENGINE CONTROLLER
+ *      UNIVERSITY EXAMINATION PORTAL | CLIENT CONTROLLER (app.js)
  * ============================================================================
- * Handles state management, timer dispatch, dynamic DOM rendering,
- * API REST requests to .NET backend, and confetti animations.
+ * Handles exam state, proctor timer, dynamic question rendering,
+ * REST API client communications, and authentic academic grading rubric.
  * ============================================================================
  */
 
@@ -22,7 +22,7 @@ const state = {
   adminQuestions: []   // Full questions for admin view
 };
 
-// API Base URL (defaults to same origin)
+// API Base URL
 const API_BASE = window.location.origin;
 
 // ============================================================================
@@ -30,29 +30,39 @@ const API_BASE = window.location.origin;
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initLiveClock();
   setupNavigation();
   setupKeyboardShortcuts();
   checkServerHealth();
 });
 
+function initLiveClock() {
+  const clockEl = document.getElementById('live-system-clock');
+  function update() {
+    const now = new Date();
+    if (clockEl) {
+      clockEl.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+    }
+  }
+  update();
+  setInterval(update, 1000);
+}
+
 async function checkServerHealth() {
-  const badge = document.getElementById('server-status-badge');
-  const label = badge.querySelector('.status-label');
+  const connStatus = document.getElementById('header-conn-status');
 
   try {
     const res = await fetch(`${API_BASE}/api/status`);
     if (!res.ok) throw new Error('Status non-200');
     const data = await res.json();
-    
-    badge.classList.add('connected');
-    label.textContent = `.NET Engine Online (${data.questionCount} Qs)`;
-    
-    // Update landing chip if present
-    const qCountChip = document.getElementById('landing-q-count');
-    if (qCountChip) qCountChip.textContent = `${data.questionCount} Questions`;
+
+    if (connStatus) {
+      connStatus.innerHTML = `<span class="pulse-indicator"></span> System Online (${data.questionCount} Questions)`;
+    }
   } catch (err) {
-    badge.classList.remove('connected');
-    label.textContent = 'Server Offline';
+    if (connStatus) {
+      connStatus.innerHTML = `<span class="pulse-indicator" style="background: var(--state-danger);"></span> Server Offline`;
+    }
     console.warn('Could not contact .NET server:', err);
   }
 }
@@ -61,20 +71,32 @@ async function checkServerHealth() {
 // 2. THEME & NAVIGATION
 // ============================================================================
 function initTheme() {
-  const savedTheme = localStorage.getItem('quiz_theme') || 'dark';
+  // Default to clean academic LIGHT mode
+  const savedTheme = localStorage.getItem('quiz_theme') || 'light';
   document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeButton(savedTheme);
 
   const toggleBtn = document.getElementById('theme-toggle-btn');
-  toggleBtn.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('quiz_theme', next);
-  });
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('quiz_theme', next);
+      updateThemeButton(next);
+    });
+  }
+}
+
+function updateThemeButton(theme) {
+  const textEl = document.getElementById('theme-text');
+  if (textEl) {
+    textEl.textContent = theme === 'light' ? 'Dark View' : 'Academic Light';
+  }
 }
 
 function setupNavigation() {
-  const tabs = document.querySelectorAll('.nav-tab');
+  const tabs = document.querySelectorAll('.nav-btn');
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       const targetId = tab.getAttribute('data-target');
@@ -82,8 +104,8 @@ function setupNavigation() {
     });
   });
 
-  // Mode cards click listener
-  const modeCards = document.querySelectorAll('.mode-card');
+  // Mode radio card clicks
+  const modeCards = document.querySelectorAll('.session-mode-card');
   modeCards.forEach(card => {
     card.addEventListener('click', () => {
       modeCards.forEach(c => c.classList.remove('active'));
@@ -93,19 +115,16 @@ function setupNavigation() {
 }
 
 function switchToTab(viewId) {
-  // Update nav buttons
-  document.querySelectorAll('.nav-tab').forEach(tab => {
+  document.querySelectorAll('.nav-btn').forEach(tab => {
     if (tab.getAttribute('data-target') === viewId) tab.classList.add('active');
     else tab.classList.remove('active');
   });
 
-  // Update panels
   document.querySelectorAll('.view-panel').forEach(panel => {
     if (panel.id === viewId) panel.classList.add('active');
     else panel.classList.remove('active');
   });
 
-  // Lazy load tab data
   if (viewId === 'leaderboard-view') loadLeaderboard();
   if (viewId === 'admin-view') loadAllQuestionsAdmin();
 }
@@ -116,27 +135,32 @@ function switchToTab(viewId) {
 async function startExam() {
   const nameInput = document.getElementById('student-name');
   const rollInput = document.getElementById('student-roll');
-  
+  const honorCheck = document.getElementById('honor-code-check');
+
   state.studentName = nameInput.value.trim();
   state.studentRoll = rollInput.value.trim();
 
   if (!state.studentName || !state.studentRoll) {
-    showToast('Please provide your Name and Roll Number.', 'error');
+    showToast('Please enter both Candidate Full Name and Hall Ticket / Roll Number.', 'error');
     return;
   }
 
-  // Get selected exam mode
+  if (honorCheck && !honorCheck.checked) {
+    showToast('Please accept the Academic Honor Code declaration to continue.', 'error');
+    return;
+  }
+
   const modeRadio = document.querySelector('input[name="exam-mode"]:checked');
   state.examMode = modeRadio ? modeRadio.value : 'exam';
 
-  showToast('Fetching question repository...', 'info');
+  showToast('Decrypting official test paper...', 'info');
 
   try {
     const res = await fetch(`${API_BASE}/api/questions`);
     const data = await res.json();
 
     if (!data.success || !data.questions || data.questions.length === 0) {
-      showToast('No questions found in repository!', 'error');
+      showToast('No questions loaded from repository!', 'error');
       return;
     }
 
@@ -145,7 +169,7 @@ async function startExam() {
     state.answers = {};
     state.flagged.clear();
 
-    // Setup Candidate Bar
+    // Setup Proctor Strip
     document.getElementById('bar-candidate-name').textContent = state.studentName;
     document.getElementById('bar-candidate-roll').textContent = state.studentRoll;
     document.getElementById('candidate-avatar').textContent = state.studentName.charAt(0).toUpperCase();
@@ -153,15 +177,15 @@ async function startExam() {
     // Timer setup
     setupTimer();
 
-    // Switch flow step
+    // Switch step
     setFlowStep('step-quiz');
 
     // Render palette and first question
     renderPalette();
     renderCurrentQuestion();
-    showToast(`Examination started! Good luck, ${state.studentName}.`, 'success');
+    showToast(`Session commenced. Candidate: ${state.studentName}`, 'success');
   } catch (err) {
-    showToast('Failed to load questions from server: ' + err.message, 'error');
+    showToast('Connection error: ' + err.message, 'error');
   }
 }
 
@@ -183,7 +207,7 @@ function setupTimer() {
     return;
   }
 
-  // 10 minutes for formal exam
+  // 10 minutes
   state.timeRemaining = 600;
   updateTimerUI();
 
@@ -193,7 +217,7 @@ function setupTimer() {
 
     if (state.timeRemaining <= 0) {
       clearInterval(state.timerInterval);
-      showToast('Time is up! Auto-submitting examination.', 'warning');
+      showToast('Scheduled examination time has expired. Auto-submitting paper.', 'error');
       executeFinalSubmit();
     }
   }, 1000);
@@ -224,10 +248,12 @@ function renderCurrentQuestion() {
   if (state.questions.length === 0) return;
   const q = state.questions[state.currentIndex];
   const total = state.questions.length;
+  const qNum = (state.currentIndex + 1).toString().padStart(2, '0');
 
-  // Header badges & statement
+  // Header badges & question number
+  document.getElementById('q-number-indicator').textContent = `QUESTION ${qNum}`;
   document.getElementById('q-type-badge').textContent = q.typeLabel || q.type;
-  document.getElementById('q-points-badge').textContent = `+${q.points} Points`;
+  document.getElementById('q-points-badge').textContent = `Marks: ${q.points}.0`;
   document.getElementById('q-statement').textContent = q.question;
 
   // Flag button state
@@ -235,22 +261,21 @@ function renderCurrentQuestion() {
   const flagText = document.getElementById('flag-btn-text');
   if (state.flagged.has(q.id)) {
     flagBtn.classList.add('flagged');
-    flagText.textContent = 'Flagged';
+    flagText.textContent = 'Marked for Review';
   } else {
     flagBtn.classList.remove('flagged');
-    flagText.textContent = 'Flag for Review';
+    flagText.textContent = 'Mark for Review';
   }
 
   // Progress Bar
   const pct = Math.round(((state.currentIndex + 1) / total) * 100);
   document.getElementById('progress-question-text').textContent = `Question ${state.currentIndex + 1} of ${total}`;
-  document.getElementById('progress-percentage-text').textContent = `${pct}% Completed`;
+  document.getElementById('progress-percentage-text').textContent = `${pct}% Answered`;
   document.getElementById('quiz-progress-bar').style.width = `${pct}%`;
 
-  // Render Response widgets based on Question Type (Polymorphic Client View)
+  // Render Responses
   const container = document.getElementById('q-response-container');
   container.innerHTML = '';
-
   const savedAnswer = state.answers[q.id] || '';
 
   if (q.type === 'MCQ') {
@@ -261,7 +286,7 @@ function renderCurrentQuestion() {
     renderFIBInput(q, container, savedAnswer);
   }
 
-  // Footer Navigation Buttons
+  // Navigation Buttons
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
   const btnSubmit = document.getElementById('btn-submit-exam');
@@ -310,12 +335,10 @@ function renderTFOptions(q, container, savedAnswer) {
 
   tfBox.innerHTML = `
     <div class="tf-card true-card ${isTrueSelected ? 'selected' : ''}" onclick="selectAnswer('True')">
-      <div class="tf-icon">✓</div>
-      <div class="tf-title">True</div>
+      <span>[ T ]</span> <span>True Statement</span>
     </div>
     <div class="tf-card false-card ${isFalseSelected ? 'selected' : ''}" onclick="selectAnswer('False')">
-      <div class="tf-icon">✗</div>
-      <div class="tf-title">False</div>
+      <span>[ F ]</span> <span>False Statement</span>
     </div>
   `;
 
@@ -328,9 +351,9 @@ function renderFIBInput(q, container, savedAnswer) {
 
   fibBox.innerHTML = `
     <input type="text" class="fib-input" id="fib-answer-input" 
-      placeholder="Type the exact missing term or keyword..." 
+      placeholder="Type the exact conceptual keyword or term..." 
       value="${escapeHtml(savedAnswer)}" autocomplete="off">
-    <span class="fib-hint">Press Enter or click Next to save your answer. Not case-sensitive.</span>
+    <span class="fib-hint">Press [Enter] or click Next to record response. Evaluation is case-insensitive.</span>
   `;
 
   container.appendChild(fibBox);
@@ -358,7 +381,7 @@ function clearCurrentAnswer() {
   const q = state.questions[state.currentIndex];
   delete state.answers[q.id];
   renderCurrentQuestion();
-  showToast('Answer cleared for this question.', 'info');
+  showToast('Response cleared for this question.', 'info');
 }
 
 function toggleFlagCurrentQuestion() {
@@ -371,7 +394,6 @@ function toggleFlagCurrentQuestion() {
   renderCurrentQuestion();
 }
 
-// Navigation between questions
 function goToPrevQuestion() {
   if (state.currentIndex > 0) {
     state.currentIndex--;
@@ -396,7 +418,7 @@ function jumpToQuestion(idx) {
 }
 
 // ============================================================================
-// 5. SIDEBAR PALETTE
+// 5. QUESTION PALETTE
 // ============================================================================
 function renderPalette() {
   const grid = document.getElementById('question-palette-grid');
@@ -431,13 +453,11 @@ function updatePaletteTiles() {
   });
 }
 
-// Keyboard shortcuts (A, B, C, D, T, F, Arrow keys)
 function setupKeyboardShortcuts() {
   window.addEventListener('keydown', (e) => {
     const activeStep = document.querySelector('.flow-step.active');
     if (!activeStep || activeStep.id !== 'step-quiz') return;
 
-    // Ignore if typing inside input / textarea
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
       return;
     }
@@ -478,9 +498,9 @@ function confirmSubmitExam() {
 
   const warning = document.getElementById('modal-warning-text');
   if (unanswered > 0) {
-    warning.innerHTML = `<span style="color: var(--color-warning);">⚠️ Warning:</span> You have <strong>${unanswered} unanswered</strong> question(s). Unanswered questions will receive 0 points.`;
+    warning.innerHTML = `Notice: You have <strong>${unanswered} unanswered</strong> questions. Unanswered questions will be awarded 0 marks.`;
   } else {
-    warning.textContent = 'All questions answered! Confirm to submit for polymorphic evaluation.';
+    warning.textContent = 'All question items have been answered. Confirm submission to compute final marks.';
   }
 
   document.getElementById('submit-confirm-modal').classList.add('active');
@@ -494,7 +514,7 @@ async function executeFinalSubmit() {
   closeSubmitModal();
   clearInterval(state.timerInterval);
 
-  showToast('Submitting answers to .NET Polymorphic Engine...', 'info');
+  showToast('Processing polymorphic evaluation...', 'info');
 
   const payload = {
     name: state.studentName,
@@ -510,11 +530,11 @@ async function executeFinalSubmit() {
     });
 
     const result = await res.json();
-    if (!result.success) throw new Error(result.message || 'Submission error');
+    if (!result.success) throw new Error(result.message || 'Evaluation error');
 
     displayScorecard(result);
   } catch (err) {
-    showToast('Failed to evaluate exam: ' + err.message, 'error');
+    showToast('Evaluation failed: ' + err.message, 'error');
   }
 }
 
@@ -524,72 +544,66 @@ async function executeFinalSubmit() {
 function displayScorecard(result) {
   setFlowStep('step-results');
 
-  // Trigger celebration confetti if passed
+  // Confetti on qualifying score
   if (result.passed && typeof confetti === 'function') {
     confetti({
-      particleCount: 120,
-      spread: 70,
+      particleCount: 80,
+      spread: 60,
       origin: { y: 0.6 }
     });
   }
 
-  // Grade circle & colors
-  const gradeCircle = document.getElementById('score-grade-circle');
-  gradeCircle.className = 'score-circle';
-
-  const letter = result.grade.charAt(0);
+  // Stamp letter & percentage
   document.getElementById('score-grade-letter').textContent = result.grade.split(' ')[0];
   document.getElementById('score-grade-pct').textContent = `${result.percentage}%`;
 
-  if (letter === 'A') gradeCircle.classList.add('grade-a');
-  else if (letter === 'B') gradeCircle.classList.add('grade-b');
-  else if (letter === 'C' || letter === 'D') gradeCircle.classList.add('grade-c');
-  else gradeCircle.classList.add('grade-f');
-
-  // Heading & metadata
+  // Status badge
   const statusBadge = document.getElementById('score-status-badge');
   if (result.passed) {
-    statusBadge.textContent = 'EXAM PASSED';
-    statusBadge.style.color = 'var(--color-success)';
-    statusBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+    statusBadge.textContent = 'QUALIFIED / PASS';
+    statusBadge.className = 'c-val status-passed';
   } else {
-    statusBadge.textContent = 'NEEDS RETEST';
-    statusBadge.style.color = 'var(--color-danger)';
-    statusBadge.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+    statusBadge.textContent = 'RETEST REQUIRED';
+    statusBadge.className = 'c-val';
+    statusBadge.style.color = 'var(--state-danger)';
   }
 
-  document.getElementById('score-candidate-heading').textContent = `Candidate: ${result.name}`;
+  document.getElementById('score-candidate-heading').textContent = result.name;
   document.getElementById('res-roll').textContent = result.rollNo;
   document.getElementById('res-score').textContent = `${result.score} / ${result.maxScore}`;
-  document.getElementById('res-correct-count').textContent = `${result.correctCount} of ${result.totalQuestions}`;
+  document.getElementById('res-correct-count').textContent = `${result.correctCount} of ${result.totalQuestions} Correct`;
   document.getElementById('res-grade').textContent = result.grade;
 
-  // Render Detailed Review Breakdown
+  // Render Itemized Audit Breakdown
   const reviewList = document.getElementById('review-questions-list');
   reviewList.innerHTML = '';
 
   result.review.forEach((item, idx) => {
     const card = document.createElement('div');
-    card.className = `review-card ${item.isCorrect ? 'correct' : 'incorrect'}`;
+    card.className = `audit-item-card ${item.isCorrect ? 'correct' : 'incorrect'}`;
 
-    const userAnsDisplay = item.userAnswerText || item.userAnswer || '<em style="color: var(--text-muted);">(No Answer)</em>';
+    const userAnsDisplay = item.userAnswerText || item.userAnswer || '(Unattempted)';
 
     card.innerHTML = `
-      <div class="review-card-header">
-        <span class="review-q-title">Question ${idx + 1} (${item.type})</span>
-        <span class="review-status-pill ${item.isCorrect ? 'correct' : 'incorrect'}">
-          ${item.isCorrect ? '✓ Correct' : '✗ Incorrect'} (+${item.pointsAwarded}/${item.maxPoints} pts)
+      <div class="audit-card-top">
+        <strong>Item ${idx + 1} &bull; ${item.type}</strong>
+        <span class="audit-status-tag ${item.isCorrect ? 'correct' : 'incorrect'}">
+          ${item.isCorrect ? '✓ Correct (+ ' + item.pointsAwarded + ' Marks)' : '✗ Incorrect (0 Marks)'}
         </span>
       </div>
-      <p style="font-size: 0.95rem; font-weight: 500;">${escapeHtml(item.question)}</p>
-      <div class="review-answer-grid">
-        <div class="ans-row">
-          <span>Your Submitted Answer:</span>
-          <strong style="color: ${item.isCorrect ? 'var(--color-success)' : 'var(--color-danger)'};">${escapeHtml(userAnsDisplay)}</strong>
+      <div class="audit-statement">${escapeHtml(item.question)}</div>
+      <div class="audit-answers-row">
+        <div>
+          <span style="font-size: 0.72rem; color: var(--ink-muted); display: block;">Candidate Response:</span>
+          <strong style="color: ${item.isCorrect ? 'var(--state-success)' : 'var(--state-danger)'}; font-family: var(--font-mono);">
+            ${escapeHtml(userAnsDisplay)}
+          </strong>
         </div>
-        <div class="ans-row">
-          <span>Expected Correct Answer:</span>
-          <strong style="color: var(--color-success);">${escapeHtml(item.correctAnswer)}</strong>
+        <div>
+          <span style="font-size: 0.72rem; color: var(--ink-muted); display: block;">Model Answer / Rubric:</span>
+          <strong style="color: var(--state-success); font-family: var(--font-mono);">
+            ${escapeHtml(item.correctAnswer)}
+          </strong>
         </div>
       </div>
     `;
@@ -608,11 +622,11 @@ function resetQuiz() {
 }
 
 // ============================================================================
-// 8. LEADERBOARD & RESULTS AUDIT
+// 8. SCOREBOARD & AUDIT LEDGER
 // ============================================================================
 async function loadLeaderboard() {
   const tbody = document.getElementById('leaderboard-tbody');
-  tbody.innerHTML = '<tr><td colspan="7" class="text-center loading-cell">Loading examination records from results.txt...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" class="loading-state">Synchronizing examination audit records from results.txt...</td></tr>';
 
   try {
     const res = await fetch(`${API_BASE}/api/results`);
@@ -620,7 +634,7 @@ async function loadLeaderboard() {
     state.allResults = data.results || [];
     renderLeaderboardTable(state.allResults);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="color: var(--color-danger);">Failed to load results: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color: var(--state-danger); padding: 16px;">Failed to read records: ${err.message}</td></tr>`;
   }
 }
 
@@ -629,7 +643,7 @@ function renderLeaderboardTable(results) {
   tbody.innerHTML = '';
 
   if (results.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No exam attempts recorded yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--ink-muted);">No candidate attempts recorded yet in results.txt.</td></tr>';
     updateLeaderboardMetrics([]);
     return;
   }
@@ -639,29 +653,29 @@ function renderLeaderboardTable(results) {
   results.forEach((row, idx) => {
     const tr = document.createElement('tr');
 
-    let rankBadge = `<span class="rank-badge">${idx + 1}</span>`;
-    if (idx === 0) rankBadge = `<span class="rank-badge rank-1">🥇 1</span>`;
-    else if (idx === 1) rankBadge = `<span class="rank-badge rank-2">🥈 2</span>`;
-    else if (idx === 2) rankBadge = `<span class="rank-badge rank-3">🥉 3</span>`;
+    let rankLabel = `#${idx + 1}`;
+    if (idx === 0) rankLabel = `1st (Honors)`;
+    else if (idx === 1) rankLabel = `2nd`;
+    else if (idx === 2) rankLabel = `3rd`;
 
-    let gradeClass = 'grade-table-b';
-    if (row.grade.startsWith('A')) gradeClass = 'grade-table-a';
-    else if (row.grade.startsWith('C') || row.grade.startsWith('D')) gradeClass = 'grade-table-c';
-    else if (row.grade.startsWith('F')) gradeClass = 'grade-table-f';
+    let badgeClass = 'div-b';
+    if (row.grade.startsWith('A')) badgeClass = 'div-a';
+    else if (row.grade.startsWith('C') || row.grade.startsWith('D')) badgeClass = 'div-c';
+    else if (row.grade.startsWith('F')) badgeClass = 'div-f';
 
     tr.innerHTML = `
-      <td>${rankBadge}</td>
-      <td><strong>${escapeHtml(row.rollNo)}</strong></td>
+      <td class="rank-cell">${rankLabel}</td>
+      <td><strong style="font-family: var(--font-mono);">${escapeHtml(row.rollNo)}</strong></td>
       <td>${escapeHtml(row.name)}</td>
-      <td><span style="font-family: var(--font-mono); font-weight: 700;">${escapeHtml(row.score)}</span></td>
+      <td><strong style="font-family: var(--font-mono);">${escapeHtml(row.score)}</strong></td>
       <td><strong>${escapeHtml(row.percentage)}</strong></td>
-      <td><span class="grade-badge-table ${gradeClass}">${escapeHtml(row.grade)}</span></td>
-      <td style="color: var(--text-muted); font-size: 0.78rem;">${escapeHtml(row.timestamp)}</td>
+      <td><span class="badge-div ${badgeClass}">${escapeHtml(row.grade)}</span></td>
+      <td style="color: var(--ink-muted); font-size: 0.76rem; font-family: var(--font-mono);">${escapeHtml(row.timestamp)}</td>
     `;
     tbody.appendChild(tr);
   });
 
-  document.getElementById('leaderboard-count-text').textContent = `Showing ${results.length} record(s)`;
+  document.getElementById('leaderboard-count-text').textContent = `Displaying ${results.length} authenticated candidate record(s)`;
 }
 
 function updateLeaderboardMetrics(results) {
@@ -715,22 +729,21 @@ function filterLeaderboard() {
 }
 
 // ============================================================================
-// 9. QUESTION BANK & ADMIN AUTHORING
+// 9. QUESTION BANK REPOSITORY & AUTHORING
 // ============================================================================
 async function loadAllQuestionsAdmin() {
   const grid = document.getElementById('admin-questions-grid');
-  grid.innerHTML = '<div style="padding: 20px; color: var(--text-muted);">Loading question bank...</div>';
+  grid.innerHTML = '<div style="padding: 20px; color: var(--ink-muted);">Loading repository questions...</div>';
 
   try {
     const res = await fetch(`${API_BASE}/api/questions/all`);
     const data = await res.json();
     state.adminQuestions = data.questions || [];
     
-    // Update badge counts
     updateQuestionCounts();
     renderAdminQuestionsGrid(state.adminQuestions);
   } catch (err) {
-    grid.innerHTML = `<div style="color: var(--color-danger);">Failed to load questions: ${err.message}</div>`;
+    grid.innerHTML = `<div style="color: var(--state-danger); padding: 20px;">Failed to load questions: ${err.message}</div>`;
   }
 }
 
@@ -747,8 +760,7 @@ function updateQuestionCounts() {
 }
 
 function filterQuestionBank(type) {
-  // Update active pill button
-  document.querySelectorAll('.filter-pills-row .pill-btn').forEach(btn => {
+  document.querySelectorAll('.filter-strip .filter-pill').forEach(btn => {
     if (btn.getAttribute('data-filter') === type) btn.classList.add('active');
     else btn.classList.remove('active');
   });
@@ -766,43 +778,43 @@ function renderAdminQuestionsGrid(questions) {
   grid.innerHTML = '';
 
   if (questions.length === 0) {
-    grid.innerHTML = '<div style="padding: 20px; color: var(--text-muted);">No questions match this filter.</div>';
+    grid.innerHTML = '<div style="padding: 20px; color: var(--ink-muted);">No question items match the selected filter.</div>';
     return;
   }
 
   questions.forEach(q => {
     const card = document.createElement('div');
-    card.className = 'admin-q-card';
+    card.className = 'repo-card';
 
     let optionsHtml = '';
     if (q.type === 'MCQ' && q.options) {
       const letters = ['A', 'B', 'C', 'D'];
-      optionsHtml = `<div class="admin-q-options">`;
+      optionsHtml = `<div class="repo-options">`;
       q.options.forEach((opt, idx) => {
         const letChar = letters[idx];
         const isCorr = (q.correctOption === letChar);
         optionsHtml += `
-          <div class="admin-opt-item ${isCorr ? 'is-correct' : ''}">
-            <strong>[${letChar}]</strong> ${escapeHtml(opt)} ${isCorr ? '✓ (Correct)' : ''}
+          <div class="repo-opt-item ${isCorr ? 'correct' : ''}">
+            <strong>[${letChar}]</strong> ${escapeHtml(opt)} ${isCorr ? '&bull; Correct Key' : ''}
           </div>
         `;
       });
       optionsHtml += `</div>`;
     } else {
       optionsHtml = `
-        <div style="background: var(--bg-secondary); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.85rem;">
-          <span style="color: var(--text-muted); font-size: 0.72rem; display: block;">Expected Answer:</span>
-          <strong style="color: var(--color-success); font-family: var(--font-mono);">${escapeHtml(q.correctAnswer)}</strong>
+        <div class="repo-opt-item correct">
+          <span style="font-size: 0.72rem; color: var(--ink-muted); display: block;">Model Answer:</span>
+          <strong>${escapeHtml(q.correctAnswer)}</strong>
         </div>
       `;
     }
 
     card.innerHTML = `
-      <div class="admin-q-header">
-        <span class="badge-type">${q.type}</span>
-        <span class="badge-points">+${q.points} Pts</span>
+      <div class="repo-card-top">
+        <span class="academic-tag">${q.type}</span>
+        <span class="points-tag">${q.points}.0 Marks</span>
       </div>
-      <p class="admin-q-text">${escapeHtml(q.question)}</p>
+      <p class="repo-statement">${escapeHtml(q.question)}</p>
       ${optionsHtml}
     `;
 
@@ -810,7 +822,6 @@ function renderAdminQuestionsGrid(questions) {
   });
 }
 
-// Add Question Modal Controls
 function openAddQuestionModal() {
   document.getElementById('add-question-modal').classList.add('active');
   updateNewQuestionFormFields();
@@ -854,7 +865,7 @@ async function submitNewQuestion() {
     const c = document.getElementById('new-opt-c').value.trim();
     const d = document.getElementById('new-opt-d').value.trim();
     if (!a || !b || !c || !d) {
-      showToast('Please fill all 4 MCQ options (A, B, C, D).', 'error');
+      showToast('Please specify all four choices (A, B, C, D).', 'error');
       return;
     }
     payload.options = [a, b, c, d];
@@ -864,7 +875,7 @@ async function submitNewQuestion() {
   } else if (type === 'FIB') {
     const fibAns = document.getElementById('new-fib-correct').value.trim();
     if (!fibAns) {
-      showToast('Please specify the expected answer.', 'error');
+      showToast('Please provide the expected concept word.', 'error');
       return;
     }
     payload.correctAnswer = fibAns;
@@ -878,19 +889,19 @@ async function submitNewQuestion() {
     });
 
     const data = await res.json();
-    if (!data.success) throw new Error(data.message || 'Failed to add question');
+    if (!data.success) throw new Error(data.message || 'Server error');
 
-    showToast('Question appended directly into questions.txt!', 'success');
+    showToast('Question item recorded into questions.txt.', 'success');
     closeAddQuestionModal();
     loadAllQuestionsAdmin();
     checkServerHealth();
   } catch (err) {
-    showToast('Error adding question: ' + err.message, 'error');
+    showToast('Error saving question: ' + err.message, 'error');
   }
 }
 
 // ============================================================================
-// 10. UTILITIES & TOASTS
+// 10. NOTIFICATION TOASTS & UTILS
 // ============================================================================
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
@@ -907,9 +918,9 @@ function showToast(message, type = 'info') {
 
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateY(10px)';
-    toast.style.transition = '0.3s ease';
-    setTimeout(() => toast.remove(), 300);
+    toast.style.transform = 'translateY(8px)';
+    toast.style.transition = '0.25s ease';
+    setTimeout(() => toast.remove(), 250);
   }, 3500);
 }
 
